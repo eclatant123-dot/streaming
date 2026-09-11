@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우리들의 음악 앨범 전시관</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #121212; /* 스트리밍 사이트 느낌의 다크 테마 */
+            color: #ffffff;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #1db954, #1ed760);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .album-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .album-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(29, 185, 84, 0.2);
+        }
+
+        .play-button-overlay {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .album-card:hover .play-button-overlay {
+            opacity: 1;
+        }
+
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121212;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .modal-open {
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        spotify: {
+                            base: '#1db954',
+                            dark: '#1ed760',
+                            black: '#191414',
+                            gray: '#b3b3b3'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<nav class="bg-black/90 backdrop-blur-md sticky top-0 z-50 border-b border-gray-800 p-4">
+    <div class="container mx-auto flex justify-between items-center">
+        <!-- 1) 제목 변경 -->
+        <a href="#" class="text-2xl font-black tracking-tighter flex items-center gap-2" onclick="showMainPage()">
+            <i class="fas fa-compact-disc text-spotify-base animate-spin-slow" style="animation-duration: 3s;"></i>
+            <span class="gradient-text">ANHWA MUSIC PRODUCING PROJECT</span>
+        </a>
+        <div class="flex gap-4">
+            <button onclick="showRegistrationModal()" class="bg-spotify-base hover:bg-spotify-dark text-black font-bold py-2 px-6 rounded-full transition-colors flex items-center gap-2">
+                <i class="fas fa-plus"></i> 내 앨범 등록
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main class="flex-grow container mx-auto p-4 md:p-8">
+    
+    <!-- 학급 선택 필터 -->
+    <div class="mb-8" id="class-filter-section">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-layer-group text-spotify-base"></i> 학급별 보기
+        </h2>
+        <div class="flex flex-wrap gap-2" id="class-buttons">
+            <button class="class-btn active bg-spotify-base text-black font-bold py-1.5 px-4 rounded-full transition-colors" data-class="all">전체</button>
+            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="6반">6반</button>
+            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="7반">7반</button>
+            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="8반">8반</button>
+            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="9반">9반</button>
+            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="10반">10반</button>
+        </div>
+    </div>
+
+    <!-- 앨범 갤러리 -->
+    <div id="album-gallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <!-- 앨범 카드들이 동적으로 추가될 영역 -->
+    </div>
+
+    <!-- 앨범 상세 보기 화면 (초기에는 숨김) -->
+    <div id="album-detail-view" class="hidden">
+        <button onclick="closeAlbumDetail()" class="mb-6 text-spotify-gray hover:text-white transition-colors flex items-center gap-2">
+            <i class="fas fa-arrow-left"></i> 목록으로 돌아가기
+        </button>
+        
+        <div class="bg-gray-900 rounded-2xl p-6 md:p-10 flex flex-col md:flex-row gap-8 shadow-2xl">
+            <!-- 앨범 아트 및 정보 -->
+            <div class="md:w-1/3 flex flex-col items-center md:items-start text-center md:text-left">
+                <img id="detail-cover" src="" alt="Album Cover" class="w-64 h-64 md:w-full md:h-auto aspect-square object-cover rounded-lg shadow-xl mb-6">
+                <h1 id="detail-title" class="text-3xl md:text-4xl font-black mb-2 text-white">앨범명</h1>
+                <p id="detail-artist" class="text-xl text-spotify-base font-medium mb-4">아티스트명</p>
+                <!-- 앨범 소개 표시 영역 추가 -->
+                <p id="detail-description" class="text-gray-300 text-sm mb-6 leading-relaxed italic border-l-4 border-spotify-base pl-3">앨범 소개</p>
+                
+                <div class="w-full bg-gray-800 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-gray-400 mb-1">제작 정보</p>
+                    <p class="text-sm mb-1"><span class="font-bold text-gray-300">작사:</span> <span id="detail-lyricist"></span></p>
+                    <p class="text-sm mb-1"><span class="font-bold text-gray-300">작곡:</span> <span id="detail-composer"></span></p>
+                    <p class="text-sm"><span class="font-bold text-gray-300">프로듀싱:</span> <span id="detail-producer"></span></p>
+                </div>
+            </div>
+
+            <!-- 트랙 리스트 및 설명 -->
+            <div class="md:w-2/3 flex flex-col">
+                <h3 class="text-2xl font-bold mb-6 border-b border-gray-700 pb-2">수록곡</h3>
+                <div id="track-list" class="flex flex-col gap-4">
+                    <!-- 트랙 정보가 동적으로 추가됨 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div id="registration-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex justify-center items-center p-4">
+    <div class="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-700">
+        <div class="sticky top-0 bg-gray-900/95 backdrop-blur-sm p-6 border-b border-gray-800 flex justify-between items-center z-10">
+            <h2 class="text-2xl font-bold">새 앨범 등록하기</h2>
+            <button onclick="closeRegistrationModal()" class="text-gray-400 hover:text-white transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="album-form" class="p-6 md:p-8 space-y-8" onsubmit="handleRegistration(event)">
+            <!-- 기본 정보 섹션 -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-spotify-base border-b border-gray-700 pb-2">기본 정보</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">소속 반 <span class="text-red-500">*</span></label>
+                        <select id="reg-class" required class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white focus:border-spotify-base focus:ring-1 focus:ring-spotify-base outline-none">
+                            <option value="">반 선택</option>
+                            <option value="6반">6반</option>
+                            <option value="7반">7반</option>
+                            <option value="8반">8반</option>
+                            <option value="9반">9반</option>
+                            <option value="10반">10반</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">아티스트(이름) <span class="text-red-500">*</span></label>
+                        <input type="text" id="reg-artist" required placeholder="본인 이름 또는 팀명" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white focus:border-spotify-base focus:ring-1 focus:ring-spotify-base outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">앨범명 <span class="text-red-500">*</span></label>
+                    <input type="text" id="reg-title" required placeholder="멋진 앨범 이름을 지어주세요" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:border-spotify-base focus:ring-1 focus:ring-spotify-base outline-none text-lg">
+                </div>
+
+                <!-- 2) 앨범 소개 입력 칸 추가 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">앨범 소개 <span class="text-red-500">*</span></label>
+                    <textarea id="reg-description" required rows="3" placeholder="이 앨범이 어떤 앨범인지, 어떤 메시지를 담고 있는지 간단히 소개해주세요." class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:border-spotify-base focus:ring-1 focus:ring-spotify-base outline-none resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">앨범 자켓 이미지 <span class="text-red-500">*</span></label>
+                    <div class="flex items-center gap-4">
+                        <div class="w-24 h-24 bg-gray-800 rounded-lg border-2 border-dashed border-gray-600 flex items-center justify-center overflow-hidden shrink-0" id="cover-preview-container">
+                            <i class="fas fa-image text-gray-500 text-2xl" id="cover-placeholder-icon"></i>
+                            <img id="cover-preview" src="" alt="Preview" class="w-full h-full object-cover hidden">
+                        </div>
+                        <div class="flex-grow">
+                            <input type="file" id="reg-cover" accept="image/*" required class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:border-spotify-base outline-none cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-spotify-base file:text-black hover:file:bg-spotify-dark transition-colors">
+                            <p class="text-xs text-gray-500 mt-2">직접 그린 그림이나 디자인한 자켓 이미지를 선택해주세요.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 제작진 정보 섹션 -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-spotify-base border-b border-gray-700 pb-2">제작진 크레딧</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">작사가</label>
+                        <input type="text" id="reg-lyricist" placeholder="이름 입력" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:border-spotify-base outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">작곡가</label>
+                        <input type="text" id="reg-composer" placeholder="이름 입력" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:border-spotify-base outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">프로듀싱</label>
+                        <input type="text" id="reg-producer" placeholder="이름 입력" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:border-spotify-base outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 수록곡 정보 섹션 (동적 곡 추가 가능) -->
+            <div class="space-y-4">
+                <div class="border-b border-gray-700 pb-2">
+                    <h3 class="text-lg font-semibold text-spotify-base">트랙 정보 (Suno AI 링크)</h3>
+                </div>
+                
+                <div id="tracks-container" class="space-y-4">
+                    <!-- 트랙 입력 칸들이 동적으로 생성됩니다 -->
+                </div>
+
+                <button type="button" onclick="addTrackInput()" class="w-full py-3 bg-gray-800/80 hover:bg-gray-700/80 text-spotify-base border border-dashed border-spotify-base/50 hover:border-spotify-base font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-plus text-sm"></i> 곡 추가하기
+                </button>
+            </div>
+
+            <div class="flex justify-end pt-4 border-t border-gray-800">
+                <button type="button" onclick="closeRegistrationModal()" class="mr-4 px-6 py-2 rounded-full font-medium text-gray-300 hover:text-white transition-colors">취소</button>
+                <button type="submit" class="bg-spotify-base hover:bg-spotify-dark text-black font-bold py-2 px-8 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-spotify-base/20">
+                    앨범 등록하기
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="alert-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex justify-center items-center p-4">
+    <div class="bg-gray-800 rounded-xl p-6 max-w-sm w-full text-center shadow-2xl border border-gray-700 transform scale-95 transition-transform" id="alert-content">
+        <i id="alert-icon" class="fas fa-check-circle text-5xl text-spotify-base mb-4"></i>
+        <h3 id="alert-title" class="text-xl font-bold mb-2">알림</h3>
+        <p id="alert-message" class="text-gray-300 mb-6">메시지 내용</p>
+        <button onclick="closeAlert()" class="bg-spotify-base hover:bg-spotify-dark text-black font-bold py-2 px-6 rounded-full w-full">확인</button>
+    </div>
+</div>
+
+<script>
+    // 앨범 데이터 상태 관리 (초기 샘플 데이터 포함)
+    let albumsData = [
+        {
+            id: 1,
+            classNum: "6반",
+            artist: "김민준",
+            title: "밤하늘의 별빛",
+            description: "지친 하루의 끝에서 위로가 되길 바라는 마음으로 만든 앨범입니다. 밤하늘을 보며 들으면 더욱 좋습니다.",
+            coverUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=600&auto=format&fit=crop",
+            credits: { lyricist: "김민준", composer: "김민준", producer: "김민준" },
+            tracks: [
+                { title: "별 헤는 밤", link: "https://suno.com", desc: "조용한 밤에 어울리는 잔잔한 피아노 곡입니다." },
+                { title: "유성우", link: "https://suno.com", desc: "빠른 템포의 신나는 일렉트로닉 음악입니다." }
+            ]
+        },
+        {
+            id: 2,
+            classNum: "7반",
+            artist: "이서윤",
+            title: "Neon City",
+            description: "화려한 도시의 밤, 그 이면에 숨겨진 외로움과 기대감을 시티팝 스타일로 표현했습니다.",
+            coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop",
+            credits: { lyricist: "이서윤", composer: "이서윤", producer: "이서윤" },
+            tracks: [
+                { title: "Midnight Drive", link: "https://suno.com", desc: "시티팝 감성의 드라이브 뮤직" },
+                { title: "Neon Lights", link: "https://suno.com", desc: "신디사이저 사운드가 돋보이는 곡" },
+                { title: "Dawn", link: "https://suno.com", desc: "새벽 감성을 담은 어쿠스틱 발라드" }
+            ]
+        },
+        {
+            id: 3,
+            classNum: "8반",
+            artist: "박지호 & 최유진",
+            title: "우리의 여름",
+            description: "함께해서 더 즐거웠던 우리의 뜨거운 여름날을 기억하며 만든 곡입니다.",
+            coverUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600&auto=format&fit=crop",
+            credits: { lyricist: "박지호", composer: "최유진", producer: "팀 썸머" },
+            tracks: [
+                { title: "파도소리", link: "https://suno.com", desc: "여름 바다가 생각나는 청량한 노래" }
+            ]
+        }
+    ];
+
+    let currentFilter = 'all';
+    let trackCount = 0;
+
+    // DOM 로드 완료 후 실행
+    document.addEventListener('DOMContentLoaded', () => {
+        renderGallery();
+        setupFilters();
+        setupImagePreview();
+        initTrackInputs();
+    });
+
+    function addTrackInput(title = '', link = '', desc = '') {
+        trackCount++;
+        const container = document.getElementById('tracks-container');
+        const trackDiv = document.createElement('div');
+        trackDiv.className = 'track-input-item bg-gray-800/50 p-4 rounded-lg border border-gray-700 relative';
+        trackDiv.id = `track-item-${trackCount}`;
+
+        const isFirst = container.children.length === 0;
+        const requiredAttr = isFirst ? 'required' : '';
+        const requiredStar = isFirst ? '<span class="text-red-500 text-sm font-normal">*</span>' : '';
+        const removeBtn = !isFirst ? `
+            <button type="button" onclick="removeTrackInput(${trackCount})" class="text-gray-400 hover:text-red-400 text-xs transition-colors flex items-center gap-1">
+                <i class="fas fa-trash-alt"></i> 삭제
+            </button>
+        ` : '';
+
+        trackDiv.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-bold text-white track-number-label">Track ${container.children.length + 1} ${requiredStar}</h4>
+                ${removeBtn}
+            </div>
+            <div class="space-y-3">
+                <input type="text" class="track-title w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-spotify-base outline-none" ${requiredAttr} placeholder="곡 제목" value="${title}">
+                <input type="url" class="track-link w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-spotify-base outline-none" ${requiredAttr} placeholder="Suno 공유 링크 URL" value="${link}">
+                <textarea class="track-desc w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-spotify-base outline-none resize-none" rows="2" placeholder="이 곡에 대한 간단한 설명을 적어주세요 (어떤 분위기인지, 가사 내용 등)">${desc}</textarea>
+            </div>
+        `;
+        container.appendChild(trackDiv);
+        updateTrackNumbers();
+    }
+
+    function removeTrackInput(id) {
+        const item = document.getElementById(`track-item-${id}`);
+        if (item) {
+            item.remove();
+            updateTrackNumbers();
+        }
+    }
+
+    function updateTrackNumbers() {
+        const items = document.querySelectorAll('#tracks-container .track-input-item');
+        items.forEach((item, idx) => {
+            const label = item.querySelector('.track-number-label');
+            const isFirst = idx === 0;
+            const requiredStar = isFirst ? '<span class="text-red-500 text-sm font-normal">*</span>' : '';
+            if (label) {
+                label.innerHTML = `Track ${idx + 1} ${requiredStar}`;
+            }
+        });
+    }
+
+    function initTrackInputs() {
+        const container = document.getElementById('tracks-container');
+        if (container) {
+            container.innerHTML = '';
+            trackCount = 0;
+            // 기본 3개 트랙 생성
+            addTrackInput();
+            addTrackInput();
+            addTrackInput();
+        }
+    }
+
+    function setupImagePreview() {
+        const coverInput = document.getElementById('reg-cover');
+        if (coverInput) {
+            coverInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const preview = document.getElementById('cover-preview');
+                const icon = document.getElementById('cover-placeholder-icon');
+                
+                if (file) {
+                    // 브라우저 메모리에 임시 URL을 생성하여 미리보기 제공
+                    const objectUrl = URL.createObjectURL(file);
+                    preview.src = objectUrl;
+                    preview.classList.remove('hidden');
+                    icon.classList.add('hidden');
+                    // 제출 시 사용할 수 있도록 임시 URL 저장
+                    this.dataset.objectUrl = objectUrl;
+                } else {
+                    preview.src = '';
+                    preview.classList.add('hidden');
+                    icon.classList.remove('hidden');
+                    this.dataset.objectUrl = '';
+                }
+            });
+        }
+    }
+
+    function renderGallery() {
+        const gallery = document.getElementById('album-gallery');
+        gallery.innerHTML = '';
+
+        const filteredAlbums = currentFilter === 'all' 
+            ? albumsData 
+            : albumsData.filter(album => album.classNum === currentFilter);
+
+        if (filteredAlbums.length === 0) {
+            gallery.innerHTML = `
+                <div class="col-span-full text-center py-20 text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-4"></i>
+                    <p>아직 등록된 앨범이 없습니다.<br>첫 번째 앨범을 등록해보세요!</p>
+                </div>`;
+            return;
+        }
+
+        filteredAlbums.forEach(album => {
+            const card = document.createElement('div');
+            card.className = 'album-card bg-gray-900 rounded-xl p-4 cursor-pointer group relative';
+            card.onclick = () => showAlbumDetail(album.id);
+            
+            // 이미지 에러 처리 추가
+            card.innerHTML = `
+                <div class="relative mb-4 rounded-md overflow-hidden aspect-square shadow-lg">
+                    <img src="${album.coverUrl}" alt="${album.title}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x600/1db954/ffffff?text=No+Cover'">
+                    <div class="play-button-overlay absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <button class="w-12 h-12 rounded-full bg-spotify-base text-black flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 hover:bg-spotify-dark">
+                            <i class="fas fa-play text-xl ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+                <h3 class="font-bold text-white text-lg truncate mb-1">${album.title}</h3>
+                <p class="text-spotify-gray text-sm truncate mb-2">${album.artist}</p>
+                <span class="inline-block bg-gray-800 text-xs text-gray-400 px-2 py-1 rounded-md border border-gray-700">${album.classNum}</span>
+            `;
+            gallery.appendChild(card);
+        });
+    }
+
+    function setupFilters() {
+        const buttons = document.querySelectorAll('.class-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // 활성화 스타일 변경
+                buttons.forEach(b => {
+                    b.classList.remove('bg-spotify-base', 'text-black', 'active');
+                    b.classList.add('bg-gray-800', 'text-white', 'hover:bg-gray-700');
+                });
+                const clickedBtn = e.target;
+                clickedBtn.classList.remove('bg-gray-800', 'text-white', 'hover:bg-gray-700');
+                clickedBtn.classList.add('bg-spotify-base', 'text-black', 'active');
+
+                // 필터링 적용
+                currentFilter = clickedBtn.dataset.class;
+                renderGallery();
+            });
+        });
+    }
+
+    function showAlbumDetail(id) {
+        const album = albumsData.find(a => a.id === id);
+        if (!album) return;
+
+        // 정보 채우기
+        const coverImg = document.getElementById('detail-cover');
+        coverImg.src = album.coverUrl;
+        coverImg.onerror = function() { this.src='https://placehold.co/600x600/1db954/ffffff?text=No+Cover'; };
+        
+        document.getElementById('detail-title').textContent = album.title;
+        document.getElementById('detail-artist').textContent = album.artist + ` (${album.classNum})`;
+        
+        // 상세 화면에 앨범 소개 텍스트 반영
+        document.getElementById('detail-description').textContent = album.description || '앨범 소개가 없습니다.';
+        
+        document.getElementById('detail-lyricist').textContent = album.credits.lyricist || '정보 없음';
+        document.getElementById('detail-composer').textContent = album.credits.composer || '정보 없음';
+        document.getElementById('detail-producer').textContent = album.credits.producer || '정보 없음';
+
+        // 트랙 리스트 생성
+        const trackList = document.getElementById('track-list');
+        trackList.innerHTML = '';
+        
+        album.tracks.forEach((track, index) => {
+            const trackEl = document.createElement('div');
+            trackEl.className = 'group p-4 rounded-xl hover:bg-gray-800 transition-colors flex items-start gap-4 border border-transparent hover:border-gray-700';
+            
+            trackEl.innerHTML = `
+                <div class="text-gray-500 font-bold w-6 text-right pt-1 group-hover:text-spotify-base transition-colors">${index + 1}</div>
+                <div class="flex-grow">
+                    <h4 class="text-lg font-bold text-white mb-1 group-hover:text-spotify-base transition-colors">${track.title}</h4>
+                    <p class="text-sm text-gray-400 mb-3">${track.desc}</p>
+                    <a href="${track.link}" target="_blank" class="inline-flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 text-white px-4 py-1.5 rounded-full transition-colors">
+                        <i class="fas fa-external-link-alt text-xs"></i> Suno에서 듣기
+                    </a>
+                </div>
+            `;
+            trackList.appendChild(trackEl);
+        });
+
+        // 화면 전환
+        document.getElementById('class-filter-section').classList.add('hidden');
+        document.getElementById('album-gallery').classList.add('hidden');
+        document.getElementById('album-detail-view').classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+
+    function closeAlbumDetail() {
+        document.getElementById('album-detail-view').classList.add('hidden');
+        document.getElementById('class-filter-section').classList.remove('hidden');
+        document.getElementById('album-gallery').classList.remove('hidden');
+    }
+
+    function showMainPage() {
+        closeAlbumDetail();
+        // 전체 필터로 초기화
+        const allBtn = document.querySelector('[data-class="all"]');
+        allBtn.click();
+    }
+
+    function showRegistrationModal() {
+        document.getElementById('registration-modal').classList.remove('hidden');
+        document.body.classList.add('modal-open');
+    }
+
+    function closeRegistrationModal() {
+        document.getElementById('registration-modal').classList.add('hidden');
+        document.body.classList.remove('modal-open');
+        document.getElementById('album-form').reset();
+        
+        // 트랙 입력창 초기화 (기본 3개)
+        initTrackInputs();
+
+        // 이미지 미리보기 초기화
+        const preview = document.getElementById('cover-preview');
+        const icon = document.getElementById('cover-placeholder-icon');
+        const coverInput = document.getElementById('reg-cover');
+        if (preview && icon) {
+            preview.src = '';
+            preview.classList.add('hidden');
+            icon.classList.remove('hidden');
+        }
+        if (coverInput) coverInput.dataset.objectUrl = '';
+    }
+
+    function handleRegistration(e) {
+        e.preventDefault();
+
+        // 동적으로 생성된 트랙 입력값 수집
+        const trackItems = document.querySelectorAll('#tracks-container .track-input-item');
+        const tracks = [];
+
+        trackItems.forEach((item, index) => {
+            const titleInput = item.querySelector('.track-title');
+            const linkInput = item.querySelector('.track-link');
+            const descInput = item.querySelector('.track-desc');
+
+            const title = titleInput ? titleInput.value.trim() : '';
+            const link = linkInput ? linkInput.value.trim() : '';
+            const desc = descInput ? descInput.value.trim() : '';
+
+            // 1번 트랙이거나 제목/링크가 입력된 경우 앨범 트랙 목록에 추가
+            if (index === 0 || title || link) {
+                tracks.push({
+                    title: title || `Track ${index + 1}`,
+                    link: link || '#',
+                    desc: desc || ''
+                });
+            }
+        });
+
+        const newAlbum = {
+            id: Date.now(), // 임시 ID 발급
+            classNum: document.getElementById('reg-class').value,
+            artist: document.getElementById('reg-artist').value,
+            title: document.getElementById('reg-title').value,
+            description: document.getElementById('reg-description').value, // 앨범 소개 데이터 추가
+            coverUrl: document.getElementById('reg-cover').dataset.objectUrl || 'https://placehold.co/600x600/1db954/ffffff?text=No+Cover',
+            credits: {
+                lyricist: document.getElementById('reg-lyricist').value,
+                composer: document.getElementById('reg-composer').value,
+                producer: document.getElementById('reg-producer').value
+            },
+            tracks: tracks
+        };
+
+        // 데이터 배열에 추가 (최신 항목을 앞에 추가)
+        albumsData.unshift(newAlbum);
+        
+        // 화면 갱신
+        renderGallery();
+        
+        // 모달 닫기 및 알림
+        closeRegistrationModal();
+        showAlert('등록 완료!', '성공적으로 앨범이 등록되었습니다.<br>메인 화면에서 확인해보세요.', 'success');
+    }
+
+    function showAlert(title, message, type = 'info') {
+        const modal = document.getElementById('alert-modal');
+        const content = document.getElementById('alert-content');
+        const titleEl = document.getElementById('alert-title');
+        const messageEl = document.getElementById('alert-message');
+        const iconEl = document.getElementById('alert-icon');
+
+        titleEl.textContent = title;
+        messageEl.innerHTML = message;
+
+        // 아이콘 색상 설정
+        iconEl.className = 'fas mb-4 text-5xl ';
+        if (type === 'success') {
+            iconEl.classList.add('fa-check-circle', 'text-spotify-base');
+        } else if (type === 'error') {
+            iconEl.classList.add('fa-exclamation-circle', 'text-red-500');
+        } else {
+            iconEl.classList.add('fa-info-circle', 'text-blue-500');
+        }
+
+        modal.classList.remove('hidden');
+        // 애니메이션 효과
+        setTimeout(() => {
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }, 10);
+    }
+
+    function closeAlert() {
+        const modal = document.getElementById('alert-modal');
+        const content = document.getElementById('alert-content');
+        
+        content.classList.remove('scale-100');
+        content.classList.add('scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 150);
+    }
+</script>
+
+</body>
+</html>
