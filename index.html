@@ -642,5 +642,27 @@
     }
 </script>
 
+
+<!-- Firebase 초기화 -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyD7Tt80ur9TPDsINSOuX4ACKXUMpTjNaE4",
+        authDomain: "streaming-f81ae.firebaseapp.com",
+        projectId: "streaming-f81ae",
+        storageBucket: "streaming-f81ae.firebasestorage.app",
+        messagingSenderId: "501253045129",
+        appId: "1:501253045129:web:7ae623ebaa757b21b8bf58"
+    };
+
+    const app = initializeApp(firebaseConfig);
+
+    // 추후 Realtime Database 등 다른 Firebase 기능에서 재사용할 수 있도록 전역에 보관
+    window.firebaseApp = app;
+
+    console.log("Firebase 연결 완료");
+</script>
+
 </body>
 </html>
