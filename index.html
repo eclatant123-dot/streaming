@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -86,9 +87,9 @@
             <span class="gradient-text">ANHWA MUSIC PRODUCING PROJECT</span>
         </a>
         <div class="flex gap-4">
-            <button onclick="showRegistrationModal()" class="bg-spotify-base hover:bg-spotify-dark text-black font-bold py-2 px-6 rounded-full transition-colors flex items-center gap-2">
-                <i class="fas fa-plus"></i> 내 앨범 등록
-            </button>
+            <span id="firebase-status" class="hidden md:inline-flex items-center gap-2 text-xs text-yellow-300 bg-gray-900 border border-gray-700 px-3 py-2 rounded-full">
+                <i class="fas fa-circle-notch fa-spin"></i> 데이터 연결 중
+            </span>
         </div>
     </div>
 </nav>
@@ -97,8 +98,13 @@
     
     <!-- 학급 선택 필터 -->
     <div class="mb-8" id="class-filter-section">
-        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-            <i class="fas fa-layer-group text-spotify-base"></i> 학급별 보기
+        <h2 class="text-xl font-bold mb-4 flex flex-wrap items-center gap-3">
+            <span class="flex items-center gap-2">
+                <i class="fas fa-layer-group text-spotify-base"></i> 학급별 보기
+            </span>
+            <button onclick="showRegistrationModal()" class="bg-spotify-base hover:bg-spotify-dark text-black text-sm font-bold py-1.5 px-4 rounded-full transition-colors inline-flex items-center gap-2 whitespace-nowrap">
+                <i class="fas fa-plus"></i> 내 앨범 등록
+            </button>
         </h2>
         <div class="flex flex-wrap gap-2" id="class-buttons">
             <button class="class-btn active bg-spotify-base text-black font-bold py-1.5 px-4 rounded-full transition-colors" data-class="all">전체</button>
@@ -262,7 +268,7 @@
 
 <script>
     // 앨범 데이터 상태 관리 (초기 샘플 데이터 포함)
-    let albumsData = [
+    const sampleAlbumsData = [
         {
             id: 1,
             classNum: "6반",
@@ -304,6 +310,7 @@
         }
     ];
 
+    let albumsData = [...sampleAlbumsData];
     let currentFilter = 'all';
     let trackCount = 0;
 
@@ -313,7 +320,49 @@
         setupFilters();
         setupImagePreview();
         initTrackInputs();
+        initFirebaseSync();
     });
+
+    function updateFirebaseStatus(state, message) {
+        const status = document.getElementById('firebase-status');
+        if (!status) return;
+
+        const styles = {
+            connecting: ['text-yellow-300', 'fa-circle-notch', true],
+            connected: ['text-green-400', 'fa-circle-check', false],
+            error: ['text-red-400', 'fa-triangle-exclamation', false]
+        };
+        const [colorClass, iconClass, spin] = styles[state] || styles.connecting;
+        status.className = `hidden md:inline-flex items-center gap-2 text-xs ${colorClass} bg-gray-900 border border-gray-700 px-3 py-2 rounded-full`;
+        status.innerHTML = `<i class="fas ${iconClass} ${spin ? 'fa-spin' : ''}"></i> ${message}`;
+    }
+
+    async function initFirebaseSync() {
+        updateFirebaseStatus('connecting', '데이터 연결 중');
+
+        try {
+            const service = await window.firebaseAlbumServicePromise;
+            service.listenAlbums(
+                (remoteAlbums) => {
+                    albumsData = [...remoteAlbums, ...sampleAlbumsData];
+                    renderGallery();
+                    updateFirebaseStatus('connected', '실시간 연결됨');
+                },
+                (error) => {
+                    console.error('Firestore 실시간 불러오기 실패:', error);
+                    updateFirebaseStatus('error', '데이터 연결 실패');
+                }
+            );
+        } catch (error) {
+            console.error('Firebase 연결 실패:', error);
+            updateFirebaseStatus('error', '데이터 연결 실패');
+            showAlert(
+                '데이터 연결 실패',
+                '공동 앨범 데이터를 불러오지 못했습니다.<br>잠시 후 새로고침해주세요.',
+                'error'
+            );
+        }
+    }
 
     function addTrackInput(title = '', link = '', desc = '') {
         trackCount++;
@@ -387,6 +436,9 @@
                 const icon = document.getElementById('cover-placeholder-icon');
                 
                 if (file) {
+                    if (this.dataset.objectUrl) {
+                        URL.revokeObjectURL(this.dataset.objectUrl);
+                    }
                     // 브라우저 메모리에 임시 URL을 생성하여 미리보기 제공
                     const objectUrl = URL.createObjectURL(file);
                     preview.src = objectUrl;
@@ -402,6 +454,86 @@
                 }
             });
         }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function safeExternalUrl(value) {
+        try {
+            const url = new URL(String(value));
+            return ['https:', 'http:'].includes(url.protocol) ? url.href : '#';
+        } catch {
+            return '#';
+        }
+    }
+
+    function safeImageUrl(value) {
+        const url = String(value || '');
+        if (/^data:image\/(jpeg|jpg|png|webp);base64,/i.test(url)) return url;
+        return safeExternalUrl(url);
+    }
+
+    // 다른 기기에서도 표지가 보이도록 이미지를 작게 압축해 Firestore에 저장한다.
+    function compressCoverImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onerror = () => reject(new Error('이미지 파일을 읽을 수 없습니다.'));
+            reader.onload = () => {
+                const image = new Image();
+                image.onerror = () => reject(new Error('지원하지 않는 이미지 형식입니다.'));
+                image.onload = () => {
+                    const sourceSize = Math.min(image.width, image.height);
+                    const sourceX = (image.width - sourceSize) / 2;
+                    const sourceY = (image.height - sourceSize) / 2;
+                    let outputSize = 600;
+                    let quality = 0.78;
+
+                    const makeDataUrl = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = outputSize;
+                        canvas.height = outputSize;
+                        const context = canvas.getContext('2d');
+                        context.fillStyle = '#191414';
+                        context.fillRect(0, 0, outputSize, outputSize);
+                        context.drawImage(
+                            image,
+                            sourceX,
+                            sourceY,
+                            sourceSize,
+                            sourceSize,
+                            0,
+                            0,
+                            outputSize,
+                            outputSize
+                        );
+                        return canvas.toDataURL('image/jpeg', quality);
+                    };
+
+                    let dataUrl = makeDataUrl();
+                    if (dataUrl.length > 700000) {
+                        outputSize = 420;
+                        quality = 0.65;
+                        dataUrl = makeDataUrl();
+                    }
+
+                    if (dataUrl.length > 850000) {
+                        reject(new Error('이미지 용량이 너무 큽니다. 다른 이미지를 선택해주세요.'));
+                        return;
+                    }
+                    resolve(dataUrl);
+                };
+                image.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
     function renderGallery() {
@@ -425,20 +557,21 @@
             const card = document.createElement('div');
             card.className = 'album-card bg-gray-900 rounded-xl p-4 cursor-pointer group relative';
             card.onclick = () => showAlbumDetail(album.id);
+            const coverUrl = safeImageUrl(album.coverUrl) || 'https://placehold.co/600x600/1db954/ffffff?text=No+Cover';
             
             // 이미지 에러 처리 추가
             card.innerHTML = `
                 <div class="relative mb-4 rounded-md overflow-hidden aspect-square shadow-lg">
-                    <img src="${album.coverUrl}" alt="${album.title}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x600/1db954/ffffff?text=No+Cover'">
+                    <img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(album.title)}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x600/1db954/ffffff?text=No+Cover'">
                     <div class="play-button-overlay absolute inset-0 bg-black/40 flex items-center justify-center">
                         <button class="w-12 h-12 rounded-full bg-spotify-base text-black flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 hover:bg-spotify-dark">
                             <i class="fas fa-play text-xl ml-1"></i>
                         </button>
                     </div>
                 </div>
-                <h3 class="font-bold text-white text-lg truncate mb-1">${album.title}</h3>
-                <p class="text-spotify-gray text-sm truncate mb-2">${album.artist}</p>
-                <span class="inline-block bg-gray-800 text-xs text-gray-400 px-2 py-1 rounded-md border border-gray-700">${album.classNum}</span>
+                <h3 class="font-bold text-white text-lg truncate mb-1">${escapeHtml(album.title)}</h3>
+                <p class="text-spotify-gray text-sm truncate mb-2">${escapeHtml(album.artist)}</p>
+                <span class="inline-block bg-gray-800 text-xs text-gray-400 px-2 py-1 rounded-md border border-gray-700">${escapeHtml(album.classNum)}</span>
             `;
             gallery.appendChild(card);
         });
@@ -470,7 +603,7 @@
 
         // 정보 채우기
         const coverImg = document.getElementById('detail-cover');
-        coverImg.src = album.coverUrl;
+        coverImg.src = safeImageUrl(album.coverUrl);
         coverImg.onerror = function() { this.src='https://placehold.co/600x600/1db954/ffffff?text=No+Cover'; };
         
         document.getElementById('detail-title').textContent = album.title;
@@ -490,13 +623,14 @@
         album.tracks.forEach((track, index) => {
             const trackEl = document.createElement('div');
             trackEl.className = 'group p-4 rounded-xl hover:bg-gray-800 transition-colors flex items-start gap-4 border border-transparent hover:border-gray-700';
+            const trackLink = safeExternalUrl(track.link);
             
             trackEl.innerHTML = `
                 <div class="text-gray-500 font-bold w-6 text-right pt-1 group-hover:text-spotify-base transition-colors">${index + 1}</div>
                 <div class="flex-grow">
-                    <h4 class="text-lg font-bold text-white mb-1 group-hover:text-spotify-base transition-colors">${track.title}</h4>
-                    <p class="text-sm text-gray-400 mb-3">${track.desc}</p>
-                    <a href="${track.link}" target="_blank" class="inline-flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 text-white px-4 py-1.5 rounded-full transition-colors">
+                    <h4 class="text-lg font-bold text-white mb-1 group-hover:text-spotify-base transition-colors">${escapeHtml(track.title)}</h4>
+                    <p class="text-sm text-gray-400 mb-3">${escapeHtml(track.desc)}</p>
+                    <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 text-white px-4 py-1.5 rounded-full transition-colors">
                         <i class="fas fa-external-link-alt text-xs"></i> Suno에서 듣기
                     </a>
                 </div>
@@ -549,56 +683,77 @@
         if (coverInput) coverInput.dataset.objectUrl = '';
     }
 
-    function handleRegistration(e) {
+    async function handleRegistration(e) {
         e.preventDefault();
 
-        // 동적으로 생성된 트랙 입력값 수집
-        const trackItems = document.querySelectorAll('#tracks-container .track-input-item');
-        const tracks = [];
+        const submitButton = e.submitter || e.target.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i>등록 중...';
+        }
 
-        trackItems.forEach((item, index) => {
-            const titleInput = item.querySelector('.track-title');
-            const linkInput = item.querySelector('.track-link');
-            const descInput = item.querySelector('.track-desc');
+        try {
+            const service = await window.firebaseAlbumServicePromise;
+            const coverFile = document.getElementById('reg-cover').files[0];
+            if (!coverFile) throw new Error('앨범 자켓 이미지를 선택해주세요.');
 
-            const title = titleInput ? titleInput.value.trim() : '';
-            const link = linkInput ? linkInput.value.trim() : '';
-            const desc = descInput ? descInput.value.trim() : '';
+            const coverUrl = await compressCoverImage(coverFile);
+            const trackItems = document.querySelectorAll('#tracks-container .track-input-item');
+            const tracks = [];
 
-            // 1번 트랙이거나 제목/링크가 입력된 경우 앨범 트랙 목록에 추가
-            if (index === 0 || title || link) {
-                tracks.push({
-                    title: title || `Track ${index + 1}`,
-                    link: link || '#',
-                    desc: desc || ''
-                });
+            trackItems.forEach((item, index) => {
+                const titleInput = item.querySelector('.track-title');
+                const linkInput = item.querySelector('.track-link');
+                const descInput = item.querySelector('.track-desc');
+
+                const title = titleInput ? titleInput.value.trim() : '';
+                const link = linkInput ? linkInput.value.trim() : '';
+                const desc = descInput ? descInput.value.trim() : '';
+
+                if (index === 0 || title || link) {
+                    tracks.push({
+                        title: title || `Track ${index + 1}`,
+                        link: link || '#',
+                        desc: desc || ''
+                    });
+                }
+            });
+
+            const newAlbum = {
+                id: (window.crypto && crypto.randomUUID)
+                    ? crypto.randomUUID()
+                    : `album_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+                classNum: document.getElementById('reg-class').value,
+                artist: document.getElementById('reg-artist').value.trim(),
+                title: document.getElementById('reg-title').value.trim(),
+                description: document.getElementById('reg-description').value.trim(),
+                coverUrl: coverUrl,
+                credits: {
+                    lyricist: document.getElementById('reg-lyricist').value.trim(),
+                    composer: document.getElementById('reg-composer').value.trim(),
+                    producer: document.getElementById('reg-producer').value.trim()
+                },
+                tracks: tracks
+            };
+
+            await service.saveAlbum(newAlbum);
+
+            // Firestore 실시간 구독이 모든 기기의 화면을 자동으로 갱신한다.
+            closeRegistrationModal();
+            showAlert('등록 완료!', '앨범이 공동 전시관에 저장되었습니다.<br>다른 기기에도 바로 표시됩니다.', 'success');
+        } catch (error) {
+            console.error('앨범 등록 실패:', error);
+            showAlert(
+                '등록 실패',
+                `${error.message || '데이터베이스에 저장하지 못했습니다.'}<br>잠시 후 다시 시도해주세요.`,
+                'error'
+            );
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = '앨범 등록하기';
             }
-        });
-
-        const newAlbum = {
-            id: Date.now(), // 임시 ID 발급
-            classNum: document.getElementById('reg-class').value,
-            artist: document.getElementById('reg-artist').value,
-            title: document.getElementById('reg-title').value,
-            description: document.getElementById('reg-description').value, // 앨범 소개 데이터 추가
-            coverUrl: document.getElementById('reg-cover').dataset.objectUrl || 'https://placehold.co/600x600/1db954/ffffff?text=No+Cover',
-            credits: {
-                lyricist: document.getElementById('reg-lyricist').value,
-                composer: document.getElementById('reg-composer').value,
-                producer: document.getElementById('reg-producer').value
-            },
-            tracks: tracks
-        };
-
-        // 데이터 배열에 추가 (최신 항목을 앞에 추가)
-        albumsData.unshift(newAlbum);
-        
-        // 화면 갱신
-        renderGallery();
-        
-        // 모달 닫기 및 알림
-        closeRegistrationModal();
-        showAlert('등록 완료!', '성공적으로 앨범이 등록되었습니다.<br>메인 화면에서 확인해보세요.', 'success');
+        }
     }
 
     function showAlert(title, message, type = 'info') {
@@ -646,6 +801,15 @@
 <!-- Firebase 초기화 -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import {
+        getFirestore,
+        collection,
+        doc,
+        setDoc,
+        onSnapshot,
+        serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyD7Tt80ur9TPDsINSOuX4ACKXUMpTjNaE4",
@@ -656,12 +820,50 @@
         appId: "1:501253045129:web:7ae623ebaa757b21b8bf58"
     };
 
-    const app = initializeApp(firebaseConfig);
+    window.firebaseAlbumServicePromise = (async () => {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const credential = await signInAnonymously(auth);
+        const albumsCollection = collection(
+            db,
+            'artifacts',
+            'music-album-gallery',
+            'public',
+            'data',
+            'albums'
+        );
 
-    // 추후 Realtime Database 등 다른 Firebase 기능에서 재사용할 수 있도록 전역에 보관
-    window.firebaseApp = app;
+        return {
+            saveAlbum: async (album) => {
+                await setDoc(doc(albumsCollection, String(album.id)), {
+                    ...album,
+                    createdAt: serverTimestamp(),
+                    createdBy: credential.user.uid
+                });
+            },
 
-    console.log("Firebase 연결 완료");
+            listenAlbums: (onData, onError) => {
+                return onSnapshot(
+                    albumsCollection,
+                    (snapshot) => {
+                        const albums = snapshot.docs
+                            .map((albumDoc) => {
+                                const data = albumDoc.data();
+                                return {
+                                    ...data,
+                                    id: albumDoc.id,
+                                    createdAtMillis: data.createdAt?.toMillis?.() || 0
+                                };
+                            })
+                            .sort((a, b) => b.createdAtMillis - a.createdAtMillis);
+                        onData(albums);
+                    },
+                    onError
+                );
+            }
+        };
+    })();
 </script>
 
 </body>
