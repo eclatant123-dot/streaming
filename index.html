@@ -94,7 +94,7 @@
     </div>
 </nav>
 
-<main class="flex-grow container mx-auto p-4 md:p-8">
+<main class="flex-grow container mx-auto p-2 md:p-8">
     
     <!-- 학급 선택 필터 -->
     <div class="mb-8" id="class-filter-section">
@@ -141,7 +141,7 @@
     </div>
 
     <!-- 앨범 갤러리 -->
-    <div id="album-gallery" class="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+    <div id="album-gallery" class="grid grid-cols-3 gap-2 md:grid-cols-3 md:gap-6 lg:grid-cols-4 xl:grid-cols-5">
         <!-- 앨범 카드들이 동적으로 추가될 영역 -->
     </div>
 
@@ -327,8 +327,7 @@
 
 <script>
     // 앨범 데이터 상태 관리 (초기 샘플 데이터 포함)
-    const sampleAlbumsData = [ ]
-       
+    const sampleAlbumsData = [];
 
     let albumsData = [...sampleAlbumsData];
     let currentFilter = 'all';
@@ -624,23 +623,23 @@
 
         filteredAlbums.forEach(album => {
             const card = document.createElement('div');
-            card.className = 'album-card bg-gray-900 rounded-xl p-4 cursor-pointer group relative';
+            card.className = 'album-card bg-gray-900 rounded-lg md:rounded-xl p-1 md:p-4 cursor-pointer group relative';
             card.onclick = () => showAlbumDetail(album.id);
             const coverUrl = safeImageUrl(album.coverUrl) || 'https://placehold.co/600x600/1db954/ffffff?text=No+Cover';
             
             // 이미지 에러 처리 추가
             card.innerHTML = `
-                <div class="relative mb-4 rounded-md overflow-hidden aspect-square shadow-lg">
+                <div class="relative mb-2 md:mb-4 rounded-md overflow-hidden aspect-square shadow-lg">
                     <img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(album.title)}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x600/1db954/ffffff?text=No+Cover'">
                     <div class="play-button-overlay absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <button class="w-12 h-12 rounded-full bg-spotify-base text-black flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 hover:bg-spotify-dark">
-                            <i class="fas fa-play text-xl ml-1"></i>
+                        <button class="w-8 h-8 md:w-12 md:h-12 rounded-full bg-spotify-base text-black flex items-center justify-center transform translate-y-2 md:translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-xl hover:scale-105 hover:bg-spotify-dark">
+                            <i class="fas fa-play text-sm md:text-xl ml-0.5 md:ml-1"></i>
                         </button>
                     </div>
                 </div>
-                <h3 class="font-bold text-white text-sm md:text-lg whitespace-normal break-words leading-snug mb-1">${escapeHtml(album.title)}</h3>
-                <p class="text-spotify-gray text-xs md:text-sm whitespace-normal break-words mb-2">${escapeHtml(album.artist)}</p>
-                <span class="inline-block bg-gray-800 text-xs text-gray-400 px-2 py-1 rounded-md border border-gray-700">${escapeHtml(album.classNum)}</span>
+                <h3 class="font-bold text-white text-xs sm:text-sm md:text-lg whitespace-normal break-words leading-snug mb-0.5 md:mb-1">${escapeHtml(album.title)}</h3>
+                <p class="text-spotify-gray text-[11px] sm:text-xs md:text-sm truncate mb-1 md:mb-2">${escapeHtml(album.artist)}</p>
+                <span class="inline-block bg-gray-800 text-[10px] md:text-xs text-gray-400 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md border border-gray-700">${escapeHtml(album.classNum)}</span>
             `;
             gallery.appendChild(card);
         });
