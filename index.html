@@ -114,6 +114,30 @@
             <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="9반">9반</button>
             <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="10반">10반</button>
         </div>
+
+        <!-- 앨범 검색 -->
+        <div class="mt-5 max-w-2xl">
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+                <input
+                    type="search"
+                    id="album-search"
+                    placeholder="앨범명, 학생 이름, 수록곡으로 검색"
+                    autocomplete="off"
+                    class="w-full bg-gray-900 border border-gray-700 rounded-full py-3 pl-11 pr-12 text-white placeholder-gray-500 outline-none focus:border-spotify-base focus:ring-1 focus:ring-spotify-base transition-colors"
+                >
+                <button
+                    type="button"
+                    id="search-clear-btn"
+                    onclick="clearAlbumSearch()"
+                    aria-label="검색어 지우기"
+                    class="hidden absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                >
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+            <p id="search-result-count" class="text-xs text-gray-500 mt-2 ml-2"></p>
+        </div>
     </div>
 
     <!-- 앨범 갤러리 -->
@@ -142,10 +166,45 @@
                     <p class="text-sm mb-1"><span class="font-bold text-gray-300">작곡:</span> <span id="detail-composer"></span></p>
                     <p class="text-sm"><span class="font-bold text-gray-300">프로듀싱:</span> <span id="detail-producer"></span></p>
                 </div>
+
+                <!-- 현재 익명 사용자 본인이 등록한 앨범에만 표시 -->
+                <div id="detail-owner-actions" class="hidden w-full gap-2 mb-4">
+                    <button id="detail-edit-button" type="button" class="flex-1 bg-spotify-base hover:bg-spotify-dark text-black font-bold py-2.5 px-4 rounded-full transition-colors">
+                        <i class="fas fa-pen mr-2"></i>수정
+                    </button>
+                    <button id="detail-delete-button" type="button" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-4 rounded-full transition-colors">
+                        <i class="fas fa-trash-alt mr-2"></i>삭제
+                    </button>
+                </div>
             </div>
 
             <!-- 트랙 리스트 및 설명 -->
             <div class="md:w-2/3 flex flex-col">
+                <!-- 실시간 별점 -->
+                <div class="bg-black/30 border border-gray-800 rounded-2xl p-5 mb-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="text-xl font-bold flex items-center gap-2">
+                                <i class="fas fa-star text-yellow-400"></i> 앨범 별점
+                            </h3>
+                            <p id="rating-summary" class="text-sm text-gray-400 mt-1">별점을 불러오는 중...</p>
+                        </div>
+                        <div id="rating-average-badge" class="self-start sm:self-auto bg-gray-800 border border-gray-700 rounded-full px-4 py-2 text-sm font-bold text-gray-300">
+                            아직 평가 없음
+                        </div>
+                    </div>
+
+                    <div id="rating-stars" class="flex items-center gap-2 mb-3" aria-label="별점 선택">
+                        <button type="button" data-rating-score="1" aria-label="1점" class="rating-star text-gray-600 hover:text-yellow-400 hover:scale-110 transition-all text-3xl"><i class="fas fa-star"></i></button>
+                        <button type="button" data-rating-score="2" aria-label="2점" class="rating-star text-gray-600 hover:text-yellow-400 hover:scale-110 transition-all text-3xl"><i class="fas fa-star"></i></button>
+                        <button type="button" data-rating-score="3" aria-label="3점" class="rating-star text-gray-600 hover:text-yellow-400 hover:scale-110 transition-all text-3xl"><i class="fas fa-star"></i></button>
+                        <button type="button" data-rating-score="4" aria-label="4점" class="rating-star text-gray-600 hover:text-yellow-400 hover:scale-110 transition-all text-3xl"><i class="fas fa-star"></i></button>
+                        <button type="button" data-rating-score="5" aria-label="5점" class="rating-star text-gray-600 hover:text-yellow-400 hover:scale-110 transition-all text-3xl"><i class="fas fa-star"></i></button>
+                    </div>
+                    <p id="my-rating-status" class="text-sm text-gray-400">별을 눌러 1~5점으로 평가해주세요.</p>
+                    <p class="text-xs text-gray-600 mt-2">익명 로그인 기준 1인 1표입니다. 다시 선택하면 기존 점수가 수정되며 중복 집계되지 않습니다.</p>
+                </div>
+
                 <h3 class="text-2xl font-bold mb-6 border-b border-gray-700 pb-2">수록곡</h3>
                 <div id="track-list" class="flex flex-col gap-4">
                     <!-- 트랙 정보가 동적으로 추가됨 -->
@@ -158,7 +217,7 @@
 <div id="registration-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex justify-center items-center p-4">
     <div class="bg-gray-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-700">
         <div class="sticky top-0 bg-gray-900/95 backdrop-blur-sm p-6 border-b border-gray-800 flex justify-between items-center z-10">
-            <h2 class="text-2xl font-bold">새 앨범 등록하기</h2>
+            <h2 id="registration-modal-title" class="text-2xl font-bold">새 앨범 등록하기</h2>
             <button onclick="closeRegistrationModal()" class="text-gray-400 hover:text-white transition-colors">
                 <i class="fas fa-times text-xl"></i>
             </button>
@@ -207,7 +266,7 @@
                         </div>
                         <div class="flex-grow">
                             <input type="file" id="reg-cover" accept="image/*" required class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:border-spotify-base outline-none cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-spotify-base file:text-black hover:file:bg-spotify-dark transition-colors">
-                            <p class="text-xs text-gray-500 mt-2">직접 그린 그림이나 디자인한 자켓 이미지를 선택해주세요.</p>
+                            <p id="cover-help-text" class="text-xs text-gray-500 mt-2">직접 그린 그림이나 디자인한 자켓 이미지를 선택해주세요.</p>
                         </div>
                     </div>
                 </div>
@@ -249,7 +308,7 @@
 
             <div class="flex justify-end pt-4 border-t border-gray-800">
                 <button type="button" onclick="closeRegistrationModal()" class="mr-4 px-6 py-2 rounded-full font-medium text-gray-300 hover:text-white transition-colors">취소</button>
-                <button type="submit" class="bg-spotify-base hover:bg-spotify-dark text-black font-bold py-2 px-8 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-spotify-base/20">
+                <button id="album-submit-button" type="submit" class="bg-spotify-base hover:bg-spotify-dark text-black font-bold py-2 px-8 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-spotify-base/20">
                     앨범 등록하기
                 </button>
             </div>
@@ -312,14 +371,24 @@
 
     let albumsData = [...sampleAlbumsData];
     let currentFilter = 'all';
+    let currentSearchQuery = '';
     let trackCount = 0;
+    let currentUserId = null;
+    let currentDetailAlbumId = null;
+    let editingAlbumId = null;
+    let editingOriginalCoverUrl = '';
+    let ratingUnsubscribe = null;
+    let currentRatings = [];
+    let ratingSubmitting = false;
 
     // DOM 로드 완료 후 실행
     document.addEventListener('DOMContentLoaded', () => {
         renderGallery();
         setupFilters();
+        setupSearch();
         setupImagePreview();
         initTrackInputs();
+        setupRatingButtons();
         initFirebaseSync();
     });
 
@@ -342,6 +411,7 @@
 
         try {
             const service = await window.firebaseAlbumServicePromise;
+            currentUserId = service.currentUserId;
             service.listenAlbums(
                 (remoteAlbums) => {
                     albumsData = [...remoteAlbums, ...sampleAlbumsData];
@@ -538,17 +608,55 @@
 
     function renderGallery() {
         const gallery = document.getElementById('album-gallery');
+        const resultCount = document.getElementById('search-result-count');
         gallery.innerHTML = '';
 
-        const filteredAlbums = currentFilter === 'all' 
-            ? albumsData 
-            : albumsData.filter(album => album.classNum === currentFilter);
+        const query = currentSearchQuery.trim().toLowerCase();
+
+        const filteredAlbums = albumsData.filter((album) => {
+            const matchesClass = currentFilter === 'all' || album.classNum === currentFilter;
+            if (!matchesClass) return false;
+            if (!query) return true;
+
+            // 앨범명, 학생/팀 이름, 반, 앨범 소개, 제작진, 수록곡 제목/설명을 한 번에 검색한다.
+            const credits = album.credits || {};
+            const tracks = Array.isArray(album.tracks) ? album.tracks : [];
+            const searchableText = [
+                album.title,
+                album.artist,
+                album.classNum,
+                album.description,
+                credits.lyricist,
+                credits.composer,
+                credits.producer,
+                ...tracks.flatMap(track => [track?.title, track?.desc])
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+
+            return searchableText.includes(query);
+        });
+
+        if (resultCount) {
+            if (query) {
+                resultCount.textContent = `검색 결과 ${filteredAlbums.length}개`;
+            } else if (currentFilter !== 'all') {
+                resultCount.textContent = `${currentFilter} 앨범 ${filteredAlbums.length}개`;
+            } else {
+                resultCount.textContent = '';
+            }
+        }
 
         if (filteredAlbums.length === 0) {
+            const hasSearch = Boolean(query);
             gallery.innerHTML = `
                 <div class="col-span-full text-center py-20 text-gray-500">
-                    <i class="fas fa-inbox text-4xl mb-4"></i>
-                    <p>아직 등록된 앨범이 없습니다.<br>첫 번째 앨범을 등록해보세요!</p>
+                    <i class="fas ${hasSearch ? 'fa-search' : 'fa-inbox'} text-4xl mb-4"></i>
+                    <p>${hasSearch
+                        ? '검색 결과가 없습니다.<br>다른 검색어를 입력해보세요.'
+                        : '아직 등록된 앨범이 없습니다.<br>첫 번째 앨범을 등록해보세요!'
+                    }</p>
                 </div>`;
             return;
         }
@@ -597,9 +705,177 @@
         });
     }
 
+    function setupSearch() {
+        const searchInput = document.getElementById('album-search');
+        const clearButton = document.getElementById('search-clear-btn');
+        if (!searchInput) return;
+
+        searchInput.addEventListener('input', () => {
+            currentSearchQuery = searchInput.value;
+            if (clearButton) {
+                clearButton.classList.toggle('hidden', !currentSearchQuery);
+            }
+            renderGallery();
+        });
+    }
+
+    function clearAlbumSearch() {
+        const searchInput = document.getElementById('album-search');
+        const clearButton = document.getElementById('search-clear-btn');
+        currentSearchQuery = '';
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+        }
+        if (clearButton) clearButton.classList.add('hidden');
+        renderGallery();
+    }
+
+    function setupRatingButtons() {
+        document.querySelectorAll('[data-rating-score]').forEach(button => {
+            button.addEventListener('click', () => {
+                const score = Number(button.dataset.ratingScore);
+                submitRating(score);
+            });
+        });
+    }
+
+    function stopRatingListener() {
+        if (typeof ratingUnsubscribe === 'function') {
+            ratingUnsubscribe();
+        }
+        ratingUnsubscribe = null;
+        currentRatings = [];
+    }
+
+    function setRatingButtonsDisabled(disabled) {
+        document.querySelectorAll('[data-rating-score]').forEach(button => {
+            button.disabled = disabled;
+            button.classList.toggle('opacity-50', disabled);
+            button.classList.toggle('cursor-not-allowed', disabled);
+        });
+    }
+
+    function renderRatingPanel(ratings = currentRatings) {
+        const summary = document.getElementById('rating-summary');
+        const badge = document.getElementById('rating-average-badge');
+        const myStatus = document.getElementById('my-rating-status');
+        const buttons = document.querySelectorAll('[data-rating-score]');
+
+        if (!summary || !badge || !myStatus) return;
+
+        const validRatings = (Array.isArray(ratings) ? ratings : []).filter(rating => {
+            const score = Number(rating.score);
+            return Number.isInteger(score) && score >= 1 && score <= 5;
+        });
+
+        const count = validRatings.length;
+        const average = count
+            ? validRatings.reduce((sum, rating) => sum + Number(rating.score), 0) / count
+            : 0;
+
+        const myRating = validRatings.find(rating =>
+            rating.userId === currentUserId || rating.id === currentUserId
+        );
+        const myScore = myRating ? Number(myRating.score) : 0;
+
+        if (count > 0) {
+            summary.textContent = `현재 ${count}명이 평가했습니다.`;
+            badge.innerHTML = `<i class="fas fa-star text-yellow-400 mr-1"></i>${average.toFixed(1)} / 5 · ${count}명`;
+            badge.classList.remove('text-gray-300');
+            badge.classList.add('text-white');
+        } else {
+            summary.textContent = '아직 등록된 별점이 없습니다.';
+            badge.textContent = '아직 평가 없음';
+            badge.classList.add('text-gray-300');
+            badge.classList.remove('text-white');
+        }
+
+        buttons.forEach(button => {
+            const score = Number(button.dataset.ratingScore);
+            button.classList.toggle('text-yellow-400', score <= myScore);
+            button.classList.toggle('text-gray-600', score > myScore);
+            button.setAttribute('aria-pressed', score === myScore ? 'true' : 'false');
+        });
+
+        myStatus.textContent = myScore
+            ? `내 별점: ${myScore}점 · 다른 별을 누르면 내 점수만 수정됩니다.`
+            : '별을 눌러 1~5점으로 평가해주세요.';
+    }
+
+    async function startRatingListener(albumId) {
+        stopRatingListener();
+        renderRatingPanel([]);
+        setRatingButtonsDisabled(true);
+
+        const summary = document.getElementById('rating-summary');
+        const myStatus = document.getElementById('my-rating-status');
+        if (summary) summary.textContent = '별점을 불러오는 중...';
+        if (myStatus) myStatus.textContent = 'Firebase 연결을 확인하는 중입니다.';
+
+        try {
+            const service = await window.firebaseAlbumServicePromise;
+            currentUserId = service.currentUserId;
+            setRatingButtonsDisabled(false);
+
+            ratingUnsubscribe = service.listenRatings(
+                albumId,
+                (ratings) => {
+                    if (currentDetailAlbumId !== albumId) return;
+                    currentRatings = ratings;
+                    renderRatingPanel(ratings);
+                },
+                (error) => {
+                    console.error('별점 실시간 불러오기 실패:', error);
+                    if (summary) summary.textContent = '별점을 불러오지 못했습니다.';
+                    if (myStatus) myStatus.textContent = 'Firestore 별점 권한 규칙을 확인해주세요.';
+                    setRatingButtonsDisabled(true);
+                }
+            );
+        } catch (error) {
+            console.error('별점 연결 실패:', error);
+            if (summary) summary.textContent = '별점 연결에 실패했습니다.';
+            if (myStatus) myStatus.textContent = '잠시 후 새로고침해주세요.';
+            setRatingButtonsDisabled(true);
+        }
+    }
+
+    async function submitRating(score) {
+        if (!currentDetailAlbumId || ratingSubmitting) return;
+        if (!Number.isInteger(score) || score < 1 || score > 5) return;
+
+        ratingSubmitting = true;
+        setRatingButtonsDisabled(true);
+        const myStatus = document.getElementById('my-rating-status');
+        if (myStatus) myStatus.textContent = `${score}점을 저장하는 중...`;
+
+        try {
+            const service = await window.firebaseAlbumServicePromise;
+            currentUserId = service.currentUserId;
+            await service.saveRating(currentDetailAlbumId, score);
+            // 저장 직후 onSnapshot이 다시 실행되어 평균과 내 별점이 자동 갱신됩니다.
+        } catch (error) {
+            console.error('별점 저장 실패:', error);
+            showAlert(
+                '별점 저장 실패',
+                `${error.message || '별점을 저장하지 못했습니다.'}<br>Firestore 별점 규칙을 확인해주세요.`,
+                'error'
+            );
+            renderRatingPanel(currentRatings);
+        } finally {
+            ratingSubmitting = false;
+            if (currentDetailAlbumId) setRatingButtonsDisabled(false);
+        }
+    }
+
+    function isOwnedAlbum(album) {
+        return Boolean(album && currentUserId && album.createdBy === currentUserId);
+    }
+
     function showAlbumDetail(id) {
         const album = albumsData.find(a => a.id === id);
         if (!album) return;
+        currentDetailAlbumId = id;
 
         // 정보 채우기
         const coverImg = document.getElementById('detail-cover');
@@ -615,6 +891,22 @@
         document.getElementById('detail-lyricist').textContent = album.credits.lyricist || '정보 없음';
         document.getElementById('detail-composer').textContent = album.credits.composer || '정보 없음';
         document.getElementById('detail-producer').textContent = album.credits.producer || '정보 없음';
+
+        // 익명 로그인 UID가 등록 당시 createdBy와 같은 경우에만 수정/삭제 버튼 표시
+        const ownerActions = document.getElementById('detail-owner-actions');
+        const editButton = document.getElementById('detail-edit-button');
+        const deleteButton = document.getElementById('detail-delete-button');
+        if (isOwnedAlbum(album)) {
+            ownerActions.classList.remove('hidden');
+            ownerActions.classList.add('flex');
+            editButton.onclick = () => showEditModal(album.id);
+            deleteButton.onclick = () => deleteAlbum(album.id);
+        } else {
+            ownerActions.classList.add('hidden');
+            ownerActions.classList.remove('flex');
+            editButton.onclick = null;
+            deleteButton.onclick = null;
+        }
 
         // 트랙 리스트 생성
         const trackList = document.getElementById('track-list');
@@ -638,6 +930,9 @@
             trackList.appendChild(trackEl);
         });
 
+        // 이 앨범의 별점을 실시간으로 구독한다.
+        startRatingListener(album.id);
+
         // 화면 전환
         document.getElementById('class-filter-section').classList.add('hidden');
         document.getElementById('album-gallery').classList.add('hidden');
@@ -646,6 +941,9 @@
     }
 
     function closeAlbumDetail() {
+        stopRatingListener();
+        currentDetailAlbumId = null;
+        setRatingButtonsDisabled(false);
         document.getElementById('album-detail-view').classList.add('hidden');
         document.getElementById('class-filter-section').classList.remove('hidden');
         document.getElementById('album-gallery').classList.remove('hidden');
@@ -658,16 +956,10 @@
         allBtn.click();
     }
 
-    function showRegistrationModal() {
-        document.getElementById('registration-modal').classList.remove('hidden');
-        document.body.classList.add('modal-open');
-    }
+    function resetAlbumFormUi() {
+        const form = document.getElementById('album-form');
+        form.reset();
 
-    function closeRegistrationModal() {
-        document.getElementById('registration-modal').classList.add('hidden');
-        document.body.classList.remove('modal-open');
-        document.getElementById('album-form').reset();
-        
         // 트랙 입력창 초기화 (기본 3개)
         initTrackInputs();
 
@@ -680,24 +972,123 @@
             preview.classList.add('hidden');
             icon.classList.remove('hidden');
         }
-        if (coverInput) coverInput.dataset.objectUrl = '';
+        if (coverInput) {
+            if (coverInput.dataset.objectUrl) {
+                URL.revokeObjectURL(coverInput.dataset.objectUrl);
+            }
+            coverInput.dataset.objectUrl = '';
+        }
+    }
+
+    function showRegistrationModal() {
+        editingAlbumId = null;
+        editingOriginalCoverUrl = '';
+        resetAlbumFormUi();
+
+        const coverInput = document.getElementById('reg-cover');
+        coverInput.required = true;
+        document.getElementById('registration-modal-title').textContent = '새 앨범 등록하기';
+        document.getElementById('album-submit-button').textContent = '앨범 등록하기';
+        document.getElementById('cover-help-text').textContent = '직접 그린 그림이나 디자인한 자켓 이미지를 선택해주세요.';
+
+        document.getElementById('registration-modal').classList.remove('hidden');
+        document.body.classList.add('modal-open');
+    }
+
+    function showEditModal(id) {
+        const album = albumsData.find(a => a.id === id);
+        if (!album || !isOwnedAlbum(album)) {
+            showAlert('수정 불가', '본인이 등록한 앨범만 수정할 수 있습니다.', 'error');
+            return;
+        }
+
+        editingAlbumId = id;
+        editingOriginalCoverUrl = album.coverUrl || '';
+        resetAlbumFormUi();
+
+        document.getElementById('reg-class').value = album.classNum || '';
+        document.getElementById('reg-artist').value = album.artist || '';
+        document.getElementById('reg-title').value = album.title || '';
+        document.getElementById('reg-description').value = album.description || '';
+        document.getElementById('reg-lyricist').value = album.credits?.lyricist || '';
+        document.getElementById('reg-composer').value = album.credits?.composer || '';
+        document.getElementById('reg-producer').value = album.credits?.producer || '';
+
+        const tracksContainer = document.getElementById('tracks-container');
+        tracksContainer.innerHTML = '';
+        trackCount = 0;
+        const existingTracks = Array.isArray(album.tracks) ? album.tracks : [];
+        existingTracks.forEach(track => addTrackInput(track.title || '', track.link || '', track.desc || ''));
+        while (tracksContainer.children.length < 3) addTrackInput();
+
+        const coverInput = document.getElementById('reg-cover');
+        coverInput.required = false;
+        const preview = document.getElementById('cover-preview');
+        const icon = document.getElementById('cover-placeholder-icon');
+        if (editingOriginalCoverUrl) {
+            preview.src = safeImageUrl(editingOriginalCoverUrl);
+            preview.classList.remove('hidden');
+            icon.classList.add('hidden');
+        }
+
+        document.getElementById('registration-modal-title').textContent = '앨범 수정하기';
+        document.getElementById('album-submit-button').textContent = '수정 저장';
+        document.getElementById('cover-help-text').textContent = '표지를 바꾸려면 새 이미지를 선택하세요. 선택하지 않으면 기존 표지가 유지됩니다.';
+        document.getElementById('registration-modal').classList.remove('hidden');
+        document.body.classList.add('modal-open');
+    }
+
+    function closeRegistrationModal() {
+        document.getElementById('registration-modal').classList.add('hidden');
+        document.body.classList.remove('modal-open');
+        editingAlbumId = null;
+        editingOriginalCoverUrl = '';
+        resetAlbumFormUi();
+    }
+
+    async function deleteAlbum(id) {
+        const album = albumsData.find(a => a.id === id);
+        if (!album || !isOwnedAlbum(album)) {
+            showAlert('삭제 불가', '본인이 등록한 앨범만 삭제할 수 있습니다.', 'error');
+            return;
+        }
+
+        const confirmed = window.confirm(`“${album.title}” 앨범을 정말 삭제할까요?\n삭제한 데이터는 되돌릴 수 없습니다.`);
+        if (!confirmed) return;
+
+        try {
+            const service = await window.firebaseAlbumServicePromise;
+            await service.deleteAlbum(id);
+            closeAlbumDetail();
+            showAlert('삭제 완료', '앨범이 삭제되었습니다.', 'success');
+        } catch (error) {
+            console.error('앨범 삭제 실패:', error);
+            showAlert('삭제 실패', `${error.message || '앨범을 삭제하지 못했습니다.'}<br>Firestore 규칙을 확인해주세요.`, 'error');
+        }
     }
 
     async function handleRegistration(e) {
         e.preventDefault();
 
+        const isEditing = Boolean(editingAlbumId);
+        const targetAlbumId = editingAlbumId;
         const submitButton = e.submitter || e.target.querySelector('button[type="submit"]');
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i>등록 중...';
+            submitButton.innerHTML = `<i class="fas fa-circle-notch fa-spin mr-2"></i>${isEditing ? '수정 중...' : '등록 중...'}`;
         }
 
         try {
             const service = await window.firebaseAlbumServicePromise;
             const coverFile = document.getElementById('reg-cover').files[0];
-            if (!coverFile) throw new Error('앨범 자켓 이미지를 선택해주세요.');
+            let coverUrl = editingOriginalCoverUrl;
 
-            const coverUrl = await compressCoverImage(coverFile);
+            if (coverFile) {
+                coverUrl = await compressCoverImage(coverFile);
+            } else if (!isEditing) {
+                throw new Error('앨범 자켓 이미지를 선택해주세요.');
+            }
+
             const trackItems = document.querySelectorAll('#tracks-container .track-input-item');
             const tracks = [];
 
@@ -719,10 +1110,12 @@
                 }
             });
 
-            const newAlbum = {
-                id: (window.crypto && crypto.randomUUID)
-                    ? crypto.randomUUID()
-                    : `album_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+            const albumData = {
+                id: isEditing
+                    ? targetAlbumId
+                    : ((window.crypto && crypto.randomUUID)
+                        ? crypto.randomUUID()
+                        : `album_${Date.now()}_${Math.random().toString(36).slice(2)}`),
                 classNum: document.getElementById('reg-class').value,
                 artist: document.getElementById('reg-artist').value.trim(),
                 title: document.getElementById('reg-title').value.trim(),
@@ -736,22 +1129,26 @@
                 tracks: tracks
             };
 
-            await service.saveAlbum(newAlbum);
-
-            // Firestore 실시간 구독이 모든 기기의 화면을 자동으로 갱신한다.
-            closeRegistrationModal();
-            showAlert('등록 완료!', '앨범이 공동 전시관에 저장되었습니다.<br>다른 기기에도 바로 표시됩니다.', 'success');
+            if (isEditing) {
+                await service.updateAlbum(albumData);
+                closeRegistrationModal();
+                showAlert('수정 완료!', '앨범 정보가 수정되었습니다.', 'success');
+            } else {
+                await service.saveAlbum(albumData);
+                closeRegistrationModal();
+                showAlert('등록 완료!', '앨범이 공동 전시관에 저장되었습니다.<br>다른 기기에도 바로 표시됩니다.', 'success');
+            }
         } catch (error) {
-            console.error('앨범 등록 실패:', error);
+            console.error(isEditing ? '앨범 수정 실패:' : '앨범 등록 실패:', error);
             showAlert(
-                '등록 실패',
+                isEditing ? '수정 실패' : '등록 실패',
                 `${error.message || '데이터베이스에 저장하지 못했습니다.'}<br>잠시 후 다시 시도해주세요.`,
                 'error'
             );
         } finally {
             if (submitButton) {
                 submitButton.disabled = false;
-                submitButton.textContent = '앨범 등록하기';
+                submitButton.textContent = isEditing ? '수정 저장' : '앨범 등록하기';
             }
         }
     }
@@ -807,6 +1204,7 @@
         collection,
         doc,
         setDoc,
+        deleteDoc,
         onSnapshot,
         serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
@@ -835,12 +1233,74 @@
         );
 
         return {
+            currentUserId: credential.user.uid,
+
             saveAlbum: async (album) => {
                 await setDoc(doc(albumsCollection, String(album.id)), {
                     ...album,
                     createdAt: serverTimestamp(),
                     createdBy: credential.user.uid
                 });
+            },
+
+            updateAlbum: async (album) => {
+                await setDoc(
+                    doc(albumsCollection, String(album.id)),
+                    {
+                        ...album,
+                        updatedAt: serverTimestamp()
+                    },
+                    { merge: true }
+                );
+            },
+
+            deleteAlbum: async (albumId) => {
+                await deleteDoc(doc(albumsCollection, String(albumId)));
+            },
+
+            saveRating: async (albumId, score) => {
+                const numericScore = Number(score);
+                if (!Number.isInteger(numericScore) || numericScore < 1 || numericScore > 5) {
+                    throw new Error('별점은 1점부터 5점까지만 입력할 수 있습니다.');
+                }
+
+                const ratingsCollection = collection(
+                    doc(albumsCollection, String(albumId)),
+                    'ratings'
+                );
+                const ratingDoc = doc(ratingsCollection, credential.user.uid);
+
+                // 문서 ID를 익명 로그인 UID로 사용하므로 한 사용자당 한 개의 별점만 존재합니다.
+                // 다시 평가하면 같은 문서를 덮어써서 중복 집계되지 않습니다.
+                await setDoc(
+                    ratingDoc,
+                    {
+                        albumId: String(albumId),
+                        userId: credential.user.uid,
+                        score: numericScore,
+                        updatedAt: serverTimestamp()
+                    },
+                    { merge: true }
+                );
+            },
+
+            listenRatings: (albumId, onData, onError) => {
+                const ratingsCollection = collection(
+                    doc(albumsCollection, String(albumId)),
+                    'ratings'
+                );
+
+                return onSnapshot(
+                    ratingsCollection,
+                    (snapshot) => {
+                        const ratings = snapshot.docs.map((ratingDoc) => ({
+                            id: ratingDoc.id,
+                            ...ratingDoc.data()
+                        }));
+                        onData(ratings);
+                    },
+                    onError
+                );
             },
 
             listenAlbums: (onData, onError) => {
