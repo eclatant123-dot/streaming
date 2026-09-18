@@ -112,14 +112,17 @@
                     <span id="playlist-count-badge" class="hidden shrink-0 min-w-4 sm:min-w-5 h-4 sm:h-5 px-1 sm:px-1.5 rounded-full bg-spotify-base text-black text-[9px] sm:text-[11px] font-black items-center justify-center">0</span>
                 </button>
             </div>
+            <button type="button" onclick="openTutorial(true)" class="ml-auto sm:ml-0 text-xs sm:text-sm font-medium text-gray-400 hover:text-white transition-colors inline-flex items-center gap-1.5 whitespace-nowrap">
+                <i class="far fa-circle-question text-spotify-base"></i> 사용방법
+            </button>
         </h2>
-        <div class="flex flex-wrap gap-2" id="class-buttons">
-            <button class="class-btn active bg-spotify-base text-black font-bold py-1.5 px-4 rounded-full transition-colors" data-class="all">전체</button>
-            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="6반">6반</button>
-            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="7반">7반</button>
-            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="8반">8반</button>
-            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="9반">9반</button>
-            <button class="class-btn bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-4 rounded-full transition-colors" data-class="10반">10반</button>
+        <div class="flex flex-nowrap gap-1 sm:gap-2 w-full" id="class-buttons">
+            <button class="class-btn active flex-1 sm:flex-none min-w-0 bg-spotify-base text-black font-bold py-1.5 px-1 sm:px-4 rounded-full transition-colors text-[10px] sm:text-sm whitespace-nowrap" data-class="all">전체보기</button>
+            <button class="class-btn flex-1 sm:flex-none min-w-0 bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-1 sm:px-4 rounded-full transition-colors text-[10px] sm:text-sm whitespace-nowrap" data-class="6반">6반</button>
+            <button class="class-btn flex-1 sm:flex-none min-w-0 bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-1 sm:px-4 rounded-full transition-colors text-[10px] sm:text-sm whitespace-nowrap" data-class="7반">7반</button>
+            <button class="class-btn flex-1 sm:flex-none min-w-0 bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-1 sm:px-4 rounded-full transition-colors text-[10px] sm:text-sm whitespace-nowrap" data-class="8반">8반</button>
+            <button class="class-btn flex-1 sm:flex-none min-w-0 bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-1 sm:px-4 rounded-full transition-colors text-[10px] sm:text-sm whitespace-nowrap" data-class="9반">9반</button>
+            <button class="class-btn flex-1 sm:flex-none min-w-0 bg-gray-800 hover:bg-gray-700 text-white font-medium py-1.5 px-1 sm:px-4 rounded-full transition-colors text-[10px] sm:text-sm whitespace-nowrap" data-class="10반">10반</button>
         </div>
 
         <!-- 앨범 검색 -->
@@ -237,9 +240,17 @@
                     <p class="text-xs text-gray-600 mt-2">익명 로그인 기준 1인 1표입니다. 다시 선택하면 기존 점수가 수정되며 중복 집계되지 않습니다.</p>
                 </div>
 
-                <h3 class="text-2xl font-bold mb-6 border-b border-gray-700 pb-2">수록곡</h3>
-                <div id="track-list" class="flex flex-col gap-4">
-                    <!-- 트랙 정보가 동적으로 추가됨 -->
+                <h3 class="text-2xl font-bold mb-4">수록곡</h3>
+                <div class="w-full overflow-hidden rounded-xl border border-gray-800 bg-black/10">
+                    <div class="grid grid-cols-[2rem_minmax(0,1fr)_2.5rem_2.5rem] sm:grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem] md:grid-cols-[3rem_minmax(0,1fr)_3.5rem_3.5rem] items-center border-b border-gray-700 bg-gray-800/70 px-2 sm:px-3 py-2.5 text-[10px] sm:text-xs font-bold text-gray-400">
+                        <div class="text-center">번호</div>
+                        <div class="pl-2 sm:pl-3">곡정보</div>
+                        <div class="text-center">듣기</div>
+                        <div class="text-center">담기</div>
+                    </div>
+                    <div id="track-list" class="divide-y divide-gray-800">
+                        <!-- 트랙 정보가 동적으로 추가됨 -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -348,6 +359,44 @@
     </div>
 </div>
 
+<!-- 사이트 사용방법 튜토리얼 -->
+<div id="tutorial-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[300] hidden flex justify-center items-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+            <div>
+                <p class="text-[11px] font-bold tracking-widest text-spotify-base mb-1">QUICK GUIDE</p>
+                <h2 id="tutorial-title" class="text-xl sm:text-2xl font-black">사이트 사용방법</h2>
+            </div>
+            <button type="button" onclick="closeTutorial()" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors" aria-label="튜토리얼 닫기">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-5 sm:p-7">
+            <div class="flex items-center gap-2 mb-5" id="tutorial-dots" aria-label="튜토리얼 진행 단계"></div>
+
+            <div class="min-h-[260px] sm:min-h-[245px] flex flex-col">
+                <div class="w-14 h-14 rounded-2xl bg-spotify-base/15 border border-spotify-base/30 flex items-center justify-center mb-5">
+                    <i id="tutorial-icon" class="fas fa-layer-group text-2xl text-spotify-base"></i>
+                </div>
+                <p id="tutorial-step-label" class="text-xs font-bold text-gray-500 mb-2">STEP 1 / 3</p>
+                <h3 id="tutorial-step-title" class="text-2xl font-black mb-3">앨범 둘러보기</h3>
+                <p id="tutorial-step-description" class="text-sm sm:text-base text-gray-300 leading-relaxed"></p>
+                <div id="tutorial-tip" class="mt-5 rounded-xl bg-black/30 border border-gray-800 px-4 py-3 text-sm text-gray-400"></div>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 pt-5 border-t border-gray-800">
+                <button id="tutorial-prev" type="button" onclick="changeTutorialStep(-1)" class="px-4 py-2.5 rounded-full text-sm font-bold text-gray-300 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                    <i class="fas fa-arrow-left mr-1"></i> 이전
+                </button>
+                <button id="tutorial-next" type="button" onclick="changeTutorialStep(1)" class="min-w-[112px] px-5 py-2.5 rounded-full bg-spotify-base hover:bg-spotify-dark text-black text-sm font-black transition-colors">
+                    다음 <i class="fas fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="alert-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] hidden flex justify-center items-center p-4">
     <div class="bg-gray-800 rounded-xl p-6 max-w-sm w-full text-center shadow-2xl border border-gray-700 transform scale-95 transition-transform" id="alert-content">
         <i id="alert-icon" class="fas fa-check-circle text-5xl text-spotify-base mb-4"></i>
@@ -373,6 +422,28 @@
     let currentRatings = [];
     let ratingSubmitting = false;
     const PLAYLIST_STORAGE_KEY = 'anhwa-music-playlist-v1';
+    const TUTORIAL_SEEN_KEY = 'anhwa-music-tutorial-seen-v2';
+    let tutorialStep = 0;
+    const tutorialSteps = [
+        {
+            icon: 'fa-layer-group',
+            title: '앨범 둘러보기',
+            description: '<b class="text-white">학급별 보기</b>에서 반을 선택하거나 검색창에 앨범명, 학생 이름, 수록곡을 입력해 원하는 앨범을 찾아보세요.',
+            tip: '<i class="fas fa-magnifying-glass mr-2 text-spotify-base"></i>앨범 표지를 누르면 수록곡과 앨범 정보를 자세히 볼 수 있어요.'
+        },
+        {
+            icon: 'fa-play',
+            title: '수록곡 듣기',
+            description: '앨범 상세 화면에서 듣고 싶은 곡의 <b class="text-white">Suno에서 듣기</b> 버튼을 누르면 해당 곡의 Suno 페이지가 새 창으로 열립니다.',
+            tip: ''
+        },
+        {
+            icon: 'fa-headphones',
+            title: '내 Playlist 만들기',
+            description: '마음에 드는 곡은 <b class="text-white">Playlist에 추가</b> 버튼으로 저장하세요. 첫 화면의 <b class="text-white">내 Playlist</b>에서 저장한 곡을 한 번에 볼 수 있습니다.',
+            tip: ''
+        }
+    ];
 
     // DOM 로드 완료 후 실행
     document.addEventListener('DOMContentLoaded', () => {
@@ -383,8 +454,96 @@
         initTrackInputs();
         setupRatingButtons();
         updatePlaylistBadge();
+        initTutorial();
         initFirebaseSync();
     });
+
+    function initTutorial() {
+        try {
+            if (localStorage.getItem(TUTORIAL_SEEN_KEY) !== '1') {
+                setTimeout(() => openTutorial(false), 350);
+            }
+        } catch (error) {
+            // localStorage를 사용할 수 없는 환경에서도 튜토리얼은 정상 동작한다.
+            setTimeout(() => openTutorial(false), 350);
+        }
+    }
+
+    function openTutorial(manual = true) {
+        tutorialStep = 0;
+        renderTutorialStep();
+        const modal = document.getElementById('tutorial-modal');
+        if (!modal) return;
+        modal.dataset.manual = manual ? '1' : '0';
+        modal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
+    }
+
+    function closeTutorial() {
+        const modal = document.getElementById('tutorial-modal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        document.body.classList.remove('modal-open');
+        try {
+            localStorage.setItem(TUTORIAL_SEEN_KEY, '1');
+        } catch (error) {
+            // 저장 실패 시 다음 방문에 다시 표시될 수 있음
+        }
+    }
+
+    function renderTutorialStep() {
+        const step = tutorialSteps[tutorialStep];
+        if (!step) return;
+
+        const icon = document.getElementById('tutorial-icon');
+        const label = document.getElementById('tutorial-step-label');
+        const title = document.getElementById('tutorial-step-title');
+        const description = document.getElementById('tutorial-step-description');
+        const tip = document.getElementById('tutorial-tip');
+        const dots = document.getElementById('tutorial-dots');
+        const prev = document.getElementById('tutorial-prev');
+        const next = document.getElementById('tutorial-next');
+
+        if (icon) icon.className = `fas ${step.icon} text-2xl text-spotify-base`;
+        if (label) label.textContent = `STEP ${tutorialStep + 1} / ${tutorialSteps.length}`;
+        if (title) title.textContent = step.title;
+        if (description) description.innerHTML = step.description;
+        if (tip) {
+            tip.innerHTML = step.tip || '';
+            tip.classList.toggle('hidden', !step.tip);
+        }
+
+        if (dots) {
+            dots.innerHTML = tutorialSteps.map((_, index) => `
+                <button type="button" onclick="goToTutorialStep(${index})" aria-label="${index + 1}단계로 이동" class="h-2 rounded-full transition-all ${index === tutorialStep ? 'w-8 bg-spotify-base' : 'w-2 bg-gray-700 hover:bg-gray-600'}"></button>
+            `).join('');
+        }
+
+        if (prev) prev.disabled = tutorialStep === 0;
+        if (next) {
+            const isLast = tutorialStep === tutorialSteps.length - 1;
+            next.innerHTML = isLast
+                ? '시작하기 <i class="fas fa-check ml-1"></i>'
+                : '다음 <i class="fas fa-arrow-right ml-1"></i>';
+        }
+    }
+
+    function changeTutorialStep(direction) {
+        const nextStep = tutorialStep + direction;
+        if (nextStep < 0) return;
+        if (nextStep >= tutorialSteps.length) {
+            closeTutorial();
+            return;
+        }
+        tutorialStep = nextStep;
+        renderTutorialStep();
+    }
+
+    function goToTutorialStep(index) {
+        if (index < 0 || index >= tutorialSteps.length) return;
+        tutorialStep = index;
+        renderTutorialStep();
+    }
 
     function updateFirebaseStatus(state, message) {
         const status = document.getElementById('firebase-status');
@@ -954,13 +1113,15 @@
     function applyPlaylistButtonState(button, isSaved) {
         if (!button) return;
         button.innerHTML = isSaved
-            ? '<i class="fas fa-check text-xs"></i> Playlist에 추가됨'
-            : '<i class="fas fa-plus text-xs"></i> Playlist에 추가';
+            ? '<i class="fas fa-check text-xs sm:text-sm"></i>'
+            : '<i class="fas fa-plus text-xs sm:text-sm"></i>';
+        button.setAttribute('aria-label', isSaved ? 'Playlist에 추가됨' : 'Playlist에 추가');
+        button.setAttribute('title', isSaved ? 'Playlist에 추가됨' : 'Playlist에 추가');
         button.classList.toggle('bg-spotify-base', isSaved);
         button.classList.toggle('hover:bg-spotify-dark', isSaved);
         button.classList.toggle('text-black', isSaved);
-        button.classList.toggle('bg-gray-700', !isSaved);
-        button.classList.toggle('hover:bg-gray-600', !isSaved);
+        button.classList.toggle('bg-gray-800', !isSaved);
+        button.classList.toggle('hover:bg-gray-700', !isSaved);
         button.classList.toggle('text-white', !isSaved);
     }
 
@@ -1028,14 +1189,14 @@
                     </div>
                     <p class="text-sm text-gray-400 truncate">${escapeHtml(item.artist)} · ${escapeHtml(item.albumTitle)}${item.classNum ? ` · ${escapeHtml(item.classNum)}` : ''}</p>
                     ${item.trackDesc ? `<p class="text-xs text-gray-600 mt-1 line-clamp-1">${escapeHtml(item.trackDesc)}</p>` : ''}
-                    <div class="flex flex-wrap gap-2 mt-3">
-                        <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-full transition-colors">
-                            <i class="fas fa-up-right-from-square"></i> Suno에서 듣기
-                        </a>
-                        <button type="button" class="playlist-remove-btn inline-flex items-center gap-2 text-xs text-red-300 hover:text-red-200 bg-red-950/30 hover:bg-red-950/50 px-3 py-2 rounded-full transition-colors">
-                            <i class="fas fa-trash-alt"></i> 삭제
-                        </button>
-                    </div>
+                </div>
+                <div class="shrink-0 flex items-center gap-1.5 sm:gap-2">
+                    <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 inline-flex items-center justify-center rounded-full bg-spotify-base hover:bg-spotify-dark text-black transition-colors" aria-label="Suno에서 듣기" title="Suno에서 듣기">
+                        <i class="fas fa-play text-xs sm:text-sm ml-0.5"></i>
+                    </a>
+                    <button type="button" class="playlist-remove-btn w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 inline-flex items-center justify-center rounded-full text-red-300 hover:text-red-200 bg-red-950/30 hover:bg-red-950/50 transition-colors" aria-label="Playlist에서 삭제" title="Playlist에서 삭제">
+                        <i class="fas fa-trash-alt text-xs sm:text-sm"></i>
+                    </button>
                 </div>
             `;
             row.querySelector('.playlist-remove-btn').onclick = () => removePlaylistItem(item.id);
@@ -1177,23 +1338,25 @@
 
         album.tracks.forEach((track, index) => {
             const trackEl = document.createElement('div');
-            trackEl.className = 'group p-4 rounded-xl hover:bg-gray-800 transition-colors flex items-start gap-4 border border-transparent hover:border-gray-700';
+            trackEl.className = 'group grid grid-cols-[2rem_minmax(0,1fr)_2.5rem_2.5rem] sm:grid-cols-[2.5rem_minmax(0,1fr)_3rem_3rem] md:grid-cols-[3rem_minmax(0,1fr)_3.5rem_3.5rem] items-center px-2 sm:px-3 py-3 sm:py-4 hover:bg-gray-800/70 transition-colors';
             const trackLink = safeExternalUrl(track.link);
 
             trackEl.innerHTML = `
-                <div class="text-gray-500 font-bold w-6 text-right pt-1 group-hover:text-spotify-base transition-colors">${index + 1}</div>
-                <div class="flex-grow">
-                    <div class="flex flex-wrap items-center gap-2 mb-1">
-                        <h4 class="track-title-trigger select-none text-lg font-bold text-white group-hover:text-spotify-base transition-colors" data-track-index="${index}">${escapeHtml(track.title)}</h4>
-                        <span class="track-title-badge ${track.isTitle ? '' : 'hidden'} inline-flex items-center gap-1 bg-yellow-400 text-black text-[10px] font-black px-2 py-1 rounded-full tracking-wide" data-track-index="${index}"><i class="fas fa-star text-[9px]"></i> TITLE</span>
+                <div class="text-gray-500 font-semibold text-xs sm:text-sm text-center group-hover:text-spotify-base transition-colors">${index + 1}</div>
+                <div class="min-w-0 pl-2 sm:pl-3 pr-2 sm:pr-4">
+                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+                        <h4 class="track-title-trigger select-none min-w-0 text-sm sm:text-base md:text-lg font-bold text-white group-hover:text-spotify-base transition-colors break-words" data-track-index="${index}">${escapeHtml(track.title)}</h4>
+                        <span class="track-title-badge ${track.isTitle ? '' : 'hidden'} inline-flex shrink-0 items-center gap-1 bg-yellow-400 text-black text-[8px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full tracking-wide" data-track-index="${index}"><i class="fas fa-star text-[7px] sm:text-[9px]"></i> TITLE</span>
                     </div>
-                    <p class="text-sm text-gray-400 mb-3">${escapeHtml(track.desc)}</p>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 text-white px-4 py-1.5 rounded-full transition-colors">
-                            <i class="fas fa-external-link-alt text-xs"></i> Suno에서 듣기
-                        </a>
-                        <button type="button" class="playlist-add-btn inline-flex items-center gap-2 text-sm px-4 py-1.5 rounded-full transition-colors font-bold"></button>
-                    </div>
+                    ${track.desc ? `<p class="text-[11px] sm:text-sm text-gray-400 leading-relaxed line-clamp-2 sm:line-clamp-none">${escapeHtml(track.desc)}</p>` : ''}
+                </div>
+                <div class="flex items-center justify-center">
+                    <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 inline-flex items-center justify-center rounded-full text-white hover:text-spotify-base hover:bg-gray-700 transition-colors" aria-label="Suno에서 듣기" title="Suno에서 듣기">
+                        <i class="fas fa-play text-xs sm:text-sm ml-0.5"></i>
+                    </a>
+                </div>
+                <div class="flex items-center justify-center">
+                    <button type="button" class="playlist-add-btn w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 inline-flex items-center justify-center rounded-full transition-colors font-bold" aria-label="Playlist에 추가" title="Playlist에 추가"></button>
                 </div>
             `;
             const titleElement = trackEl.querySelector('.track-title-trigger');
@@ -1489,6 +1652,13 @@
             modal.classList.add('hidden');
         }, 150);
     }
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        const tutorialModal = document.getElementById('tutorial-modal');
+        if (tutorialModal && !tutorialModal.classList.contains('hidden')) {
+            closeTutorial();
+        }
+    });
 </script>
 
 
