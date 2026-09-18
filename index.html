@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -9,7 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
-        
+
         body {
             font-family: 'Noto Sans KR', sans-serif;
             background-color: #121212; /* 스트리밍 사이트 느낌의 다크 테마 */
@@ -95,7 +94,7 @@
 </nav>
 
 <main class="flex-grow container mx-auto p-2 md:p-8">
-    
+
     <!-- 학급 선택 필터 -->
     <div class="mb-8" id="class-filter-section">
         <h2 class="text-xl font-bold mb-4 flex flex-wrap items-center gap-3">
@@ -104,6 +103,10 @@
             </span>
             <button onclick="showRegistrationModal()" class="bg-spotify-base hover:bg-spotify-dark text-black text-sm font-bold py-1.5 px-4 rounded-full transition-colors inline-flex items-center gap-2 whitespace-nowrap">
                 <i class="fas fa-plus"></i> 내 앨범 등록
+            </button>
+            <button onclick="showPlaylistPage()" class="bg-gray-800 hover:bg-gray-700 text-white text-sm font-bold py-1.5 px-4 rounded-full transition-colors inline-flex items-center gap-2 whitespace-nowrap border border-gray-700">
+                <i class="fas fa-headphones"></i> 내 Playlist
+                <span id="playlist-count-badge" class="hidden min-w-5 h-5 px-1.5 rounded-full bg-spotify-base text-black text-[11px] font-black items-center justify-center">0</span>
             </button>
         </h2>
         <div class="flex flex-wrap gap-2" id="class-buttons">
@@ -145,12 +148,51 @@
         <!-- 앨범 카드들이 동적으로 추가될 영역 -->
     </div>
 
+    <!-- 내 Playlist 화면 -->
+    <div id="playlist-view" class="hidden">
+        <button onclick="showMainPage()" class="mb-6 text-spotify-gray hover:text-white transition-colors flex items-center gap-2">
+            <i class="fas fa-arrow-left"></i> 앨범 목록으로 돌아가기
+        </button>
+
+        <div class="bg-gray-900 rounded-2xl p-5 md:p-8 shadow-2xl border border-gray-800">
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
+                <div>
+                    <p class="text-sm text-spotify-base font-bold mb-1">MY MUSIC</p>
+                    <h1 class="text-3xl md:text-4xl font-black">내 Playlist</h1>
+                    <p id="playlist-summary" class="text-sm text-gray-400 mt-2">저장한 곡을 불러오는 중...</p>
+                </div>
+            </div>
+
+            <div id="playlist-player-section" class="hidden mb-7 bg-black/40 border border-gray-800 rounded-2xl overflow-hidden">
+                <div class="p-4 border-b border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="text-xs text-spotify-base font-bold mb-1"><i class="fas fa-volume-high mr-1"></i>NOW PLAYING</p>
+                        <h2 id="playlist-player-title" class="font-bold text-white truncate">-</h2>
+                        <p id="playlist-player-meta" class="text-xs text-gray-500 truncate"></p>
+                    </div>
+                    <a id="playlist-player-open-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-full transition-colors whitespace-nowrap">
+                        <i class="fas fa-up-right-from-square"></i> Suno에서 열기
+                    </a>
+                </div>
+                <iframe id="playlist-player-frame" title="Suno 음악 플레이어" class="w-full h-[240px] bg-black" src="about:blank" loading="lazy" allow="autoplay; encrypted-media" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            </div>
+
+            <div id="playlist-empty" class="hidden text-center py-16 text-gray-500">
+                <i class="fas fa-music text-5xl mb-4 text-gray-700"></i>
+                <p class="text-lg font-bold text-gray-300 mb-2">아직 저장한 곡이 없습니다.</p>
+                <p class="text-sm">앨범의 수록곡에서 <span class="text-spotify-base font-bold">Playlist에 추가</span> 버튼을 눌러보세요.</p>
+            </div>
+
+            <div id="playlist-list" class="flex flex-col gap-3"></div>
+        </div>
+    </div>
+
     <!-- 앨범 상세 보기 화면 (초기에는 숨김) -->
     <div id="album-detail-view" class="hidden">
         <button onclick="closeAlbumDetail()" class="mb-6 text-spotify-gray hover:text-white transition-colors flex items-center gap-2">
             <i class="fas fa-arrow-left"></i> 목록으로 돌아가기
         </button>
-        
+
         <div class="bg-gray-900 rounded-2xl p-6 md:p-10 flex flex-col md:flex-row gap-8 shadow-2xl">
             <!-- 앨범 아트 및 정보 -->
             <div class="md:w-1/3 flex flex-col items-center md:items-start text-center md:text-left">
@@ -159,7 +201,7 @@
                 <p id="detail-artist" class="text-xl text-spotify-base font-medium mb-4">아티스트명</p>
                 <!-- 앨범 소개 표시 영역 추가 -->
                 <p id="detail-description" class="text-gray-300 text-sm mb-6 leading-relaxed italic border-l-4 border-spotify-base pl-3">앨범 소개</p>
-                
+
                 <div class="w-full bg-gray-800 rounded-lg p-4 mb-4">
                     <p class="text-sm text-gray-400 mb-1">제작 정보</p>
                     <p class="text-sm mb-1"><span class="font-bold text-gray-300">작사:</span> <span id="detail-lyricist"></span></p>
@@ -222,12 +264,12 @@
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
-        
+
         <form id="album-form" class="p-6 md:p-8 space-y-8" onsubmit="handleRegistration(event)">
             <!-- 기본 정보 섹션 -->
             <div class="space-y-4">
                 <h3 class="text-lg font-semibold text-spotify-base border-b border-gray-700 pb-2">기본 정보</h3>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-1">소속 반 <span class="text-red-500">*</span></label>
@@ -296,7 +338,7 @@
                 <div class="border-b border-gray-700 pb-2">
                     <h3 class="text-lg font-semibold text-spotify-base">트랙 정보 (Suno AI 링크)</h3>
                 </div>
-                
+
                 <div id="tracks-container" class="space-y-4">
                     <!-- 트랙 입력 칸들이 동적으로 생성됩니다 -->
                 </div>
@@ -340,6 +382,7 @@
     let ratingUnsubscribe = null;
     let currentRatings = [];
     let ratingSubmitting = false;
+    const PLAYLIST_STORAGE_KEY = 'anhwa-music-playlist-v1';
 
     // DOM 로드 완료 후 실행
     document.addEventListener('DOMContentLoaded', () => {
@@ -349,6 +392,7 @@
         setupImagePreview();
         initTrackInputs();
         setupRatingButtons();
+        updatePlaylistBadge();
         initFirebaseSync();
     });
 
@@ -464,7 +508,7 @@
                 const file = e.target.files[0];
                 const preview = document.getElementById('cover-preview');
                 const icon = document.getElementById('cover-placeholder-icon');
-                
+
                 if (file) {
                     if (this.dataset.objectUrl) {
                         URL.revokeObjectURL(this.dataset.objectUrl);
@@ -626,7 +670,7 @@
             card.className = 'album-card bg-gray-900 rounded-lg md:rounded-xl p-1 md:p-4 cursor-pointer group relative';
             card.onclick = () => showAlbumDetail(album.id);
             const coverUrl = safeImageUrl(album.coverUrl) || 'https://placehold.co/600x600/1db954/ffffff?text=No+Cover';
-            
+
             // 이미지 에러 처리 추가
             card.innerHTML = `
                 <div class="relative mb-2 md:mb-4 rounded-md overflow-hidden aspect-square shadow-lg">
@@ -828,6 +872,195 @@
         }
     }
 
+    function getPlaylistItems() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(PLAYLIST_STORAGE_KEY) || '[]');
+            return Array.isArray(saved) ? saved : [];
+        } catch (error) {
+            console.warn('Playlist 불러오기 실패:', error);
+            return [];
+        }
+    }
+
+    function savePlaylistItems(items) {
+        localStorage.setItem(PLAYLIST_STORAGE_KEY, JSON.stringify(items));
+        updatePlaylistBadge();
+    }
+
+    function makePlaylistItem(album, track, trackIndex) {
+        return {
+            id: `${String(album.id)}::${trackIndex}`,
+            albumId: String(album.id),
+            trackIndex,
+            trackTitle: String(track?.title || `Track ${trackIndex + 1}`),
+            trackLink: String(track?.link || ''),
+            trackDesc: String(track?.desc || ''),
+            albumTitle: String(album.title || ''),
+            artist: String(album.artist || ''),
+            classNum: String(album.classNum || ''),
+            addedAt: Date.now()
+        };
+    }
+
+    function isPlaylistItemSaved(itemId) {
+        return getPlaylistItems().some(item => item.id === itemId);
+    }
+
+    function updatePlaylistBadge() {
+        const badge = document.getElementById('playlist-count-badge');
+        if (!badge) return;
+        const count = getPlaylistItems().length;
+        badge.textContent = String(count);
+        badge.classList.toggle('hidden', count === 0);
+        badge.classList.toggle('inline-flex', count > 0);
+    }
+
+    function applyPlaylistButtonState(button, isSaved) {
+        if (!button) return;
+        button.innerHTML = isSaved
+            ? '<i class="fas fa-check text-xs"></i> Playlist에 추가됨'
+            : '<i class="fas fa-plus text-xs"></i> Playlist에 추가';
+        button.classList.toggle('bg-spotify-base', isSaved);
+        button.classList.toggle('hover:bg-spotify-dark', isSaved);
+        button.classList.toggle('text-black', isSaved);
+        button.classList.toggle('bg-gray-700', !isSaved);
+        button.classList.toggle('hover:bg-gray-600', !isSaved);
+        button.classList.toggle('text-white', !isSaved);
+    }
+
+    function togglePlaylistTrack(album, track, trackIndex, button) {
+        const playlistItem = makePlaylistItem(album, track, trackIndex);
+        const items = getPlaylistItems();
+        const existingIndex = items.findIndex(item => item.id === playlistItem.id);
+        let isSaved;
+
+        if (existingIndex >= 0) {
+            items.splice(existingIndex, 1);
+            isSaved = false;
+        } else {
+            items.unshift(playlistItem);
+            isSaved = true;
+        }
+
+        savePlaylistItems(items);
+        applyPlaylistButtonState(button, isSaved);
+    }
+
+    function removePlaylistItem(itemId) {
+        const items = getPlaylistItems().filter(item => item.id !== itemId);
+        savePlaylistItems(items);
+        renderPlaylist();
+    }
+
+    function getSunoSongId(link) {
+        try {
+            const url = new URL(String(link || ''));
+            if (!/(^|\.)suno\.com$/i.test(url.hostname)) return null;
+            const match = url.pathname.match(/\/(?:song|embed)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+            return match ? match[1] : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function getSunoEmbedUrl(link) {
+        const songId = getSunoSongId(link);
+        return songId ? `https://suno.com/embed/${songId}` : '';
+    }
+
+    function playPlaylistItem(itemId) {
+        const item = getPlaylistItems().find(savedItem => savedItem.id === itemId);
+        if (!item) return;
+
+        const embedUrl = getSunoEmbedUrl(item.trackLink);
+        if (!embedUrl) {
+            showAlert(
+                '사이트 내 재생을 지원하지 않는 링크입니다.',
+                '이 곡은 Suno의 짧은 공유 링크 형식이라 내 Playlist 화면에 바로 삽입할 수 없습니다.<br>아래 버튼으로 Suno에서 들어주세요.',
+                'error'
+            );
+            const safeLink = safeExternalUrl(item.trackLink);
+            if (safeLink !== '#') window.open(safeLink, '_blank', 'noopener,noreferrer');
+            return;
+        }
+
+        const playerSection = document.getElementById('playlist-player-section');
+        const playerFrame = document.getElementById('playlist-player-frame');
+        const playerTitle = document.getElementById('playlist-player-title');
+        const playerMeta = document.getElementById('playlist-player-meta');
+        const playerOpenLink = document.getElementById('playlist-player-open-link');
+
+        playerTitle.textContent = item.trackTitle;
+        playerMeta.textContent = `${item.artist} · ${item.albumTitle}`;
+        playerOpenLink.href = safeExternalUrl(item.trackLink);
+        playerFrame.src = embedUrl;
+        playerSection.classList.remove('hidden');
+        playerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderPlaylist() {
+        const items = getPlaylistItems();
+        const list = document.getElementById('playlist-list');
+        const empty = document.getElementById('playlist-empty');
+        const summary = document.getElementById('playlist-summary');
+        const playerSection = document.getElementById('playlist-player-section');
+        const playerFrame = document.getElementById('playlist-player-frame');
+
+        if (!list || !empty || !summary) return;
+        list.innerHTML = '';
+        summary.textContent = `저장한 곡 ${items.length}곡`;
+        empty.classList.toggle('hidden', items.length > 0);
+
+        if (items.length === 0) {
+            if (playerSection) playerSection.classList.add('hidden');
+            if (playerFrame) playerFrame.src = 'about:blank';
+            return;
+        }
+
+        items.forEach((item, index) => {
+            const album = albumsData.find(albumItem => String(albumItem.id) === String(item.albumId));
+            const coverUrl = safeImageUrl(album?.coverUrl) || 'https://placehold.co/300x300/1db954/ffffff?text=Music';
+            const trackLink = safeExternalUrl(item.trackLink);
+            const canEmbed = Boolean(getSunoEmbedUrl(item.trackLink));
+            const row = document.createElement('div');
+            row.className = 'bg-black/25 border border-gray-800 hover:border-gray-700 rounded-xl p-3 md:p-4 flex gap-3 md:gap-4 items-center transition-colors';
+            row.innerHTML = `
+                <div class="text-gray-600 font-bold w-5 text-right shrink-0">${index + 1}</div>
+                <img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(item.albumTitle)}" class="w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover shrink-0 bg-gray-800" onerror="this.src='https://placehold.co/300x300/1db954/ffffff?text=Music'">
+                <div class="min-w-0 flex-grow">
+                    <h3 class="font-bold text-white text-base md:text-lg truncate">${escapeHtml(item.trackTitle)}</h3>
+                    <p class="text-sm text-gray-400 truncate">${escapeHtml(item.artist)} · ${escapeHtml(item.albumTitle)}${item.classNum ? ` · ${escapeHtml(item.classNum)}` : ''}</p>
+                    ${item.trackDesc ? `<p class="text-xs text-gray-600 mt-1 line-clamp-1">${escapeHtml(item.trackDesc)}</p>` : ''}
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <button type="button" class="playlist-play-btn inline-flex items-center gap-2 text-xs font-bold ${canEmbed ? 'bg-spotify-base hover:bg-spotify-dark text-black' : 'bg-gray-700 hover:bg-gray-600 text-white'} px-3 py-2 rounded-full transition-colors">
+                            <i class="fas fa-play"></i> ${canEmbed ? '여기서 듣기' : 'Suno에서 듣기'}
+                        </button>
+                        <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-full transition-colors">
+                            <i class="fas fa-up-right-from-square"></i> Suno
+                        </a>
+                        <button type="button" class="playlist-remove-btn inline-flex items-center gap-2 text-xs text-red-300 hover:text-red-200 bg-red-950/30 hover:bg-red-950/50 px-3 py-2 rounded-full transition-colors">
+                            <i class="fas fa-trash-alt"></i> 삭제
+                        </button>
+                    </div>
+                </div>
+            `;
+            row.querySelector('.playlist-play-btn').onclick = () => playPlaylistItem(item.id);
+            row.querySelector('.playlist-remove-btn').onclick = () => removePlaylistItem(item.id);
+            list.appendChild(row);
+        });
+    }
+
+    function showPlaylistPage() {
+        stopRatingListener();
+        currentDetailAlbumId = null;
+        document.getElementById('class-filter-section').classList.add('hidden');
+        document.getElementById('album-gallery').classList.add('hidden');
+        document.getElementById('album-detail-view').classList.add('hidden');
+        document.getElementById('playlist-view').classList.remove('hidden');
+        renderPlaylist();
+        window.scrollTo(0, 0);
+    }
+
     function isOwnedAlbum(album) {
         return Boolean(album && currentUserId && album.createdBy === currentUserId);
     }
@@ -841,13 +1074,13 @@
         const coverImg = document.getElementById('detail-cover');
         coverImg.src = safeImageUrl(album.coverUrl);
         coverImg.onerror = function() { this.src='https://placehold.co/600x600/1db954/ffffff?text=No+Cover'; };
-        
+
         document.getElementById('detail-title').textContent = album.title;
         document.getElementById('detail-artist').textContent = album.artist + ` (${album.classNum})`;
-        
+
         // 상세 화면에 앨범 소개 텍스트 반영
         document.getElementById('detail-description').textContent = album.description || '앨범 소개가 없습니다.';
-        
+
         document.getElementById('detail-lyricist').textContent = album.credits.lyricist || '정보 없음';
         document.getElementById('detail-composer').textContent = album.credits.composer || '정보 없음';
         document.getElementById('detail-producer').textContent = album.credits.producer || '정보 없음';
@@ -871,22 +1104,29 @@
         // 트랙 리스트 생성
         const trackList = document.getElementById('track-list');
         trackList.innerHTML = '';
-        
+
         album.tracks.forEach((track, index) => {
             const trackEl = document.createElement('div');
             trackEl.className = 'group p-4 rounded-xl hover:bg-gray-800 transition-colors flex items-start gap-4 border border-transparent hover:border-gray-700';
             const trackLink = safeExternalUrl(track.link);
-            
+
             trackEl.innerHTML = `
                 <div class="text-gray-500 font-bold w-6 text-right pt-1 group-hover:text-spotify-base transition-colors">${index + 1}</div>
                 <div class="flex-grow">
                     <h4 class="text-lg font-bold text-white mb-1 group-hover:text-spotify-base transition-colors">${escapeHtml(track.title)}</h4>
                     <p class="text-sm text-gray-400 mb-3">${escapeHtml(track.desc)}</p>
-                    <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 text-white px-4 py-1.5 rounded-full transition-colors">
-                        <i class="fas fa-external-link-alt text-xs"></i> Suno에서 듣기
-                    </a>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 text-white px-4 py-1.5 rounded-full transition-colors">
+                            <i class="fas fa-external-link-alt text-xs"></i> Suno에서 듣기
+                        </a>
+                        <button type="button" class="playlist-add-btn inline-flex items-center gap-2 text-sm px-4 py-1.5 rounded-full transition-colors font-bold"></button>
+                    </div>
                 </div>
             `;
+            const playlistButton = trackEl.querySelector('.playlist-add-btn');
+            const playlistItem = makePlaylistItem(album, track, index);
+            applyPlaylistButtonState(playlistButton, isPlaylistItemSaved(playlistItem.id));
+            playlistButton.onclick = () => togglePlaylistTrack(album, track, index, playlistButton);
             trackList.appendChild(trackEl);
         });
 
@@ -896,6 +1136,7 @@
         // 화면 전환
         document.getElementById('class-filter-section').classList.add('hidden');
         document.getElementById('album-gallery').classList.add('hidden');
+        document.getElementById('playlist-view').classList.add('hidden');
         document.getElementById('album-detail-view').classList.remove('hidden');
         window.scrollTo(0, 0);
     }
@@ -905,15 +1146,28 @@
         currentDetailAlbumId = null;
         setRatingButtonsDisabled(false);
         document.getElementById('album-detail-view').classList.add('hidden');
+        document.getElementById('playlist-view').classList.add('hidden');
         document.getElementById('class-filter-section').classList.remove('hidden');
         document.getElementById('album-gallery').classList.remove('hidden');
     }
 
     function showMainPage() {
-        closeAlbumDetail();
+        stopRatingListener();
+        currentDetailAlbumId = null;
+        setRatingButtonsDisabled(false);
+        document.getElementById('album-detail-view').classList.add('hidden');
+        document.getElementById('playlist-view').classList.add('hidden');
+        document.getElementById('class-filter-section').classList.remove('hidden');
+        document.getElementById('album-gallery').classList.remove('hidden');
+        const playerFrame = document.getElementById('playlist-player-frame');
+        if (playerFrame) playerFrame.src = 'about:blank';
+        const playerSection = document.getElementById('playlist-player-section');
+        if (playerSection) playerSection.classList.add('hidden');
+
         // 전체 필터로 초기화
         const allBtn = document.querySelector('[data-class="all"]');
-        allBtn.click();
+        if (allBtn) allBtn.click();
+        window.scrollTo(0, 0);
     }
 
     function resetAlbumFormUi() {
@@ -1144,10 +1398,10 @@
     function closeAlert() {
         const modal = document.getElementById('alert-modal');
         const content = document.getElementById('alert-content');
-        
+
         content.classList.remove('scale-100');
         content.classList.add('scale-95');
-        
+
         setTimeout(() => {
             modal.classList.add('hidden');
         }, 150);
