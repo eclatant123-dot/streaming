@@ -379,7 +379,7 @@
                 <div class="w-14 h-14 rounded-2xl bg-spotify-base/15 border border-spotify-base/30 flex items-center justify-center mb-5">
                     <i id="tutorial-icon" class="fas fa-layer-group text-2xl text-spotify-base"></i>
                 </div>
-                <p id="tutorial-step-label" class="text-xs font-bold text-gray-500 mb-2">STEP 1 / 3</p>
+                <p id="tutorial-step-label" class="text-xs font-bold text-gray-500 mb-2">STEP 1 / 4</p>
                 <h3 id="tutorial-step-title" class="text-2xl font-black mb-3">앨범 둘러보기</h3>
                 <p id="tutorial-step-description" class="text-sm sm:text-base text-gray-300 leading-relaxed"></p>
                 <div id="tutorial-tip" class="mt-5 rounded-xl bg-black/30 border border-gray-800 px-4 py-3 text-sm text-gray-400"></div>
@@ -442,6 +442,12 @@
             title: '내 Playlist 만들기',
             description: '마음에 드는 곡은 <b class="text-white">Playlist에 추가</b> 버튼으로 저장하세요. 첫 화면의 <b class="text-white">내 Playlist</b>에서 저장한 곡을 한 번에 볼 수 있습니다.',
             tip: ''
+        },
+        {
+            icon: 'fa-mobile-screen-button',
+            title: '홈 화면에 추가하기',
+            description: '이 사이트가 마음에 든다면 브라우저 메뉴의 <b class="text-white">홈 화면에 추가</b>를 눌러보세요. 휴대폰 홈 화면에 아이콘을 만들어 <b class="text-white">앱처럼 바로 접속</b>할 수 있습니다.',
+            tip: '<i class="fas fa-house mr-2 text-spotify-base"></i>다음부터는 홈 화면의 아이콘만 누르면 바로 음악 전시관으로 들어올 수 있어요.'
         }
     ];
 
@@ -460,12 +466,15 @@
 
     function initTutorial() {
         try {
-            if (localStorage.getItem(TUTORIAL_SEEN_KEY) !== '1') {
-                setTimeout(() => openTutorial(false), 350);
-            }
-        } catch (error) {
-            // localStorage를 사용할 수 없는 환경에서도 튜토리얼은 정상 동작한다.
+            if (localStorage.getItem(TUTORIAL_SEEN_KEY) === '1') return;
+
+            // 최초 접속으로 기록한 뒤 한 번만 자동으로 표시한다.
+            localStorage.setItem(TUTORIAL_SEEN_KEY, '1');
             setTimeout(() => openTutorial(false), 350);
+        } catch (error) {
+            // 최초 접속 여부를 저장할 수 없는 환경에서는 자동 팝업을 띄우지 않는다.
+            // 사용자는 첫 화면의 '사용방법' 버튼으로 언제든 직접 열 수 있다.
+            console.warn('튜토리얼 최초 접속 기록을 저장할 수 없습니다:', error);
         }
     }
 
