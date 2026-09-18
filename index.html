@@ -101,13 +101,17 @@
             <span class="flex items-center gap-2">
                 <i class="fas fa-layer-group text-spotify-base"></i> 학급별 보기
             </span>
-            <button onclick="showRegistrationModal()" class="bg-spotify-base hover:bg-spotify-dark text-black text-sm font-bold py-1.5 px-4 rounded-full transition-colors inline-flex items-center gap-2 whitespace-nowrap">
-                <i class="fas fa-plus"></i> 내 앨범 등록
-            </button>
-            <button onclick="showPlaylistPage()" class="bg-gray-800 hover:bg-gray-700 text-white text-sm font-bold py-1.5 px-4 rounded-full transition-colors inline-flex items-center gap-2 whitespace-nowrap border border-gray-700">
-                <i class="fas fa-headphones"></i> 내 Playlist
-                <span id="playlist-count-badge" class="hidden min-w-5 h-5 px-1.5 rounded-full bg-spotify-base text-black text-[11px] font-black items-center justify-center">0</span>
-            </button>
+            <div class="w-full sm:w-auto flex flex-nowrap items-center gap-2">
+                <button onclick="showRegistrationModal()" class="flex-1 sm:flex-none min-w-0 bg-spotify-base hover:bg-spotify-dark text-black text-[11px] xs:text-xs sm:text-sm font-bold py-1.5 px-2 sm:px-4 rounded-full transition-colors inline-flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap">
+                    <i class="fas fa-plus shrink-0"></i>
+                    <span class="truncate">내 앨범 등록</span>
+                </button>
+                <button onclick="showPlaylistPage()" class="flex-1 sm:flex-none min-w-0 bg-gray-800 hover:bg-gray-700 text-white text-[11px] xs:text-xs sm:text-sm font-bold py-1.5 px-2 sm:px-4 rounded-full transition-colors inline-flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap border border-gray-700">
+                    <i class="fas fa-headphones shrink-0"></i>
+                    <span class="truncate">내 Playlist</span>
+                    <span id="playlist-count-badge" class="hidden shrink-0 min-w-4 sm:min-w-5 h-4 sm:h-5 px-1 sm:px-1.5 rounded-full bg-spotify-base text-black text-[9px] sm:text-[11px] font-black items-center justify-center">0</span>
+                </button>
+            </div>
         </h2>
         <div class="flex flex-wrap gap-2" id="class-buttons">
             <button class="class-btn active bg-spotify-base text-black font-bold py-1.5 px-4 rounded-full transition-colors" data-class="all">전체</button>
@@ -161,20 +165,6 @@
                     <h1 class="text-3xl md:text-4xl font-black">내 Playlist</h1>
                     <p id="playlist-summary" class="text-sm text-gray-400 mt-2">저장한 곡을 불러오는 중...</p>
                 </div>
-            </div>
-
-            <div id="playlist-player-section" class="hidden mb-7 bg-black/40 border border-gray-800 rounded-2xl overflow-hidden">
-                <div class="p-4 border-b border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div class="min-w-0">
-                        <p class="text-xs text-spotify-base font-bold mb-1"><i class="fas fa-volume-high mr-1"></i>NOW PLAYING</p>
-                        <h2 id="playlist-player-title" class="font-bold text-white truncate">-</h2>
-                        <p id="playlist-player-meta" class="text-xs text-gray-500 truncate"></p>
-                    </div>
-                    <a id="playlist-player-open-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-full transition-colors whitespace-nowrap">
-                        <i class="fas fa-up-right-from-square"></i> Suno에서 열기
-                    </a>
-                </div>
-                <iframe id="playlist-player-frame" title="Suno 음악 플레이어" class="w-full h-[240px] bg-black" src="about:blank" loading="lazy" allow="autoplay; encrypted-media" referrerpolicy="strict-origin-when-cross-origin"></iframe>
             </div>
 
             <div id="playlist-empty" class="hidden text-center py-16 text-gray-500">
@@ -420,6 +410,14 @@
                 (remoteAlbums) => {
                     albumsData = [...remoteAlbums, ...sampleAlbumsData];
                     renderGallery();
+
+                    // Playlist 화면을 먼저 열었더라도 앨범 데이터가 도착하면
+                    // 각 곡의 실제 앨범 커버로 즉시 다시 렌더링한다.
+                    const playlistView = document.getElementById('playlist-view');
+                    if (playlistView && !playlistView.classList.contains('hidden')) {
+                        renderPlaylist();
+                    }
+
                     updateFirebaseStatus('connected', '실시간 연결됨');
                 },
                 (error) => {
@@ -438,12 +436,14 @@
         }
     }
 
-    function addTrackInput(title = '', link = '', desc = '') {
+    function addTrackInput(title = '', link = '', desc = '', isTitle = false) {
         trackCount++;
         const container = document.getElementById('tracks-container');
         const trackDiv = document.createElement('div');
         trackDiv.className = 'track-input-item bg-gray-800/50 p-4 rounded-lg border border-gray-700 relative';
         trackDiv.id = `track-item-${trackCount}`;
+        // 기존 앨범의 타이틀곡 정보는 수정 화면에서도 보존하되 버튼은 노출하지 않는다.
+        trackDiv.dataset.isTitle = isTitle ? 'true' : 'false';
 
         const isFirst = container.children.length === 0;
         const requiredAttr = isFirst ? 'required' : '';
@@ -453,11 +453,18 @@
                 <i class="fas fa-trash-alt"></i> 삭제
             </button>
         ` : '';
+        const titleChecked = isTitle ? 'checked' : '';
 
         trackDiv.innerHTML = `
-            <div class="flex justify-between items-center mb-3">
+            <div class="flex justify-between items-center gap-3 mb-3">
                 <h4 class="font-bold text-white track-number-label">Track ${container.children.length + 1} ${requiredStar}</h4>
-                ${removeBtn}
+                <div class="flex items-center gap-3">
+                    <label class="inline-flex items-center gap-2 text-xs font-bold cursor-pointer select-none ${isTitle ? 'text-yellow-300' : 'text-gray-400'}">
+                        <input type="checkbox" class="title-track-checkbox w-4 h-4 accent-yellow-400 cursor-pointer" ${titleChecked} onchange="setRegistrationTitleTrack(this)">
+                        <span><i class="fas fa-star mr-1"></i>TITLE 곡</span>
+                    </label>
+                    ${removeBtn}
+                </div>
             </div>
             <div class="space-y-3">
                 <input type="text" class="track-title w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:border-spotify-base outline-none" ${requiredAttr} placeholder="곡 제목" value="${title}">
@@ -467,6 +474,35 @@
         `;
         container.appendChild(trackDiv);
         updateTrackNumbers();
+    }
+
+    function setRegistrationTitleTrack(checkbox) {
+        const currentItem = checkbox.closest('.track-input-item');
+        if (!currentItem) return;
+
+        const allItems = document.querySelectorAll('#tracks-container .track-input-item');
+        allItems.forEach(item => {
+            const input = item.querySelector('.title-track-checkbox');
+            const label = input?.closest('label');
+            const shouldBeTitle = item === currentItem && checkbox.checked;
+
+            item.dataset.isTitle = shouldBeTitle ? 'true' : 'false';
+            if (input && input !== checkbox) input.checked = false;
+            if (label) {
+                label.classList.toggle('text-yellow-300', shouldBeTitle);
+                label.classList.toggle('text-gray-400', !shouldBeTitle);
+            }
+        });
+
+        // 현재 체크를 해제한 경우에는 타이틀곡이 없는 상태로 둔다.
+        if (!checkbox.checked) {
+            currentItem.dataset.isTitle = 'false';
+            const label = checkbox.closest('label');
+            if (label) {
+                label.classList.remove('text-yellow-300');
+                label.classList.add('text-gray-400');
+            }
+        }
     }
 
     function removeTrackInput(id) {
@@ -952,59 +988,11 @@
         renderPlaylist();
     }
 
-    function getSunoSongId(link) {
-        try {
-            const url = new URL(String(link || ''));
-            if (!/(^|\.)suno\.com$/i.test(url.hostname)) return null;
-            const match = url.pathname.match(/\/(?:song|embed)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
-            return match ? match[1] : null;
-        } catch {
-            return null;
-        }
-    }
-
-    function getSunoEmbedUrl(link) {
-        const songId = getSunoSongId(link);
-        return songId ? `https://suno.com/embed/${songId}` : '';
-    }
-
-    function playPlaylistItem(itemId) {
-        const item = getPlaylistItems().find(savedItem => savedItem.id === itemId);
-        if (!item) return;
-
-        const embedUrl = getSunoEmbedUrl(item.trackLink);
-        if (!embedUrl) {
-            showAlert(
-                '사이트 내 재생을 지원하지 않는 링크입니다.',
-                '이 곡은 Suno의 짧은 공유 링크 형식이라 내 Playlist 화면에 바로 삽입할 수 없습니다.<br>아래 버튼으로 Suno에서 들어주세요.',
-                'error'
-            );
-            const safeLink = safeExternalUrl(item.trackLink);
-            if (safeLink !== '#') window.open(safeLink, '_blank', 'noopener,noreferrer');
-            return;
-        }
-
-        const playerSection = document.getElementById('playlist-player-section');
-        const playerFrame = document.getElementById('playlist-player-frame');
-        const playerTitle = document.getElementById('playlist-player-title');
-        const playerMeta = document.getElementById('playlist-player-meta');
-        const playerOpenLink = document.getElementById('playlist-player-open-link');
-
-        playerTitle.textContent = item.trackTitle;
-        playerMeta.textContent = `${item.artist} · ${item.albumTitle}`;
-        playerOpenLink.href = safeExternalUrl(item.trackLink);
-        playerFrame.src = embedUrl;
-        playerSection.classList.remove('hidden');
-        playerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
     function renderPlaylist() {
         const items = getPlaylistItems();
         const list = document.getElementById('playlist-list');
         const empty = document.getElementById('playlist-empty');
         const summary = document.getElementById('playlist-summary');
-        const playerSection = document.getElementById('playlist-player-section');
-        const playerFrame = document.getElementById('playlist-player-frame');
 
         if (!list || !empty || !summary) return;
         list.innerHTML = '';
@@ -1012,31 +1000,37 @@
         empty.classList.toggle('hidden', items.length > 0);
 
         if (items.length === 0) {
-            if (playerSection) playerSection.classList.add('hidden');
-            if (playerFrame) playerFrame.src = 'about:blank';
             return;
         }
 
         items.forEach((item, index) => {
-            const album = albumsData.find(albumItem => String(albumItem.id) === String(item.albumId));
-            const coverUrl = safeImageUrl(album?.coverUrl) || 'https://placehold.co/300x300/1db954/ffffff?text=Music';
+            // 1순위: 저장 당시의 albumId로 찾기
+            // 2순위: 예전 Playlist 데이터와의 호환을 위해 앨범명 + 아티스트로 찾기
+            const album = albumsData.find(
+                albumItem => String(albumItem.id) === String(item.albumId)
+            ) || albumsData.find(
+                albumItem =>
+                    String(albumItem.title || '') === String(item.albumTitle || '') &&
+                    String(albumItem.artist || '') === String(item.artist || '')
+            );
+
+            const liveCoverUrl = album?.coverUrl || '';
+            const coverUrl = safeImageUrl(liveCoverUrl) || 'https://placehold.co/300x300/1db954/ffffff?text=Music';
             const trackLink = safeExternalUrl(item.trackLink);
-            const canEmbed = Boolean(getSunoEmbedUrl(item.trackLink));
             const row = document.createElement('div');
             row.className = 'bg-black/25 border border-gray-800 hover:border-gray-700 rounded-xl p-3 md:p-4 flex gap-3 md:gap-4 items-center transition-colors';
             row.innerHTML = `
                 <div class="text-gray-600 font-bold w-5 text-right shrink-0">${index + 1}</div>
-                <img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(item.albumTitle)}" class="w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover shrink-0 bg-gray-800" onerror="this.src='https://placehold.co/300x300/1db954/ffffff?text=Music'">
+                <img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(item.albumTitle)} 앨범 커버" class="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover shrink-0 bg-gray-800 shadow-md" onerror="this.src='https://placehold.co/300x300/1db954/ffffff?text=Music'">
                 <div class="min-w-0 flex-grow">
-                    <h3 class="font-bold text-white text-base md:text-lg truncate">${escapeHtml(item.trackTitle)}</h3>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <h3 class="font-bold text-white text-base md:text-lg truncate">${escapeHtml(item.trackTitle)}</h3>
+                    </div>
                     <p class="text-sm text-gray-400 truncate">${escapeHtml(item.artist)} · ${escapeHtml(item.albumTitle)}${item.classNum ? ` · ${escapeHtml(item.classNum)}` : ''}</p>
                     ${item.trackDesc ? `<p class="text-xs text-gray-600 mt-1 line-clamp-1">${escapeHtml(item.trackDesc)}</p>` : ''}
                     <div class="flex flex-wrap gap-2 mt-3">
-                        <button type="button" class="playlist-play-btn inline-flex items-center gap-2 text-xs font-bold ${canEmbed ? 'bg-spotify-base hover:bg-spotify-dark text-black' : 'bg-gray-700 hover:bg-gray-600 text-white'} px-3 py-2 rounded-full transition-colors">
-                            <i class="fas fa-play"></i> ${canEmbed ? '여기서 듣기' : 'Suno에서 듣기'}
-                        </button>
                         <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-full transition-colors">
-                            <i class="fas fa-up-right-from-square"></i> Suno
+                            <i class="fas fa-up-right-from-square"></i> Suno에서 듣기
                         </a>
                         <button type="button" class="playlist-remove-btn inline-flex items-center gap-2 text-xs text-red-300 hover:text-red-200 bg-red-950/30 hover:bg-red-950/50 px-3 py-2 rounded-full transition-colors">
                             <i class="fas fa-trash-alt"></i> 삭제
@@ -1044,7 +1038,6 @@
                     </div>
                 </div>
             `;
-            row.querySelector('.playlist-play-btn').onclick = () => playPlaylistItem(item.id);
             row.querySelector('.playlist-remove-btn').onclick = () => removePlaylistItem(item.id);
             list.appendChild(row);
         });
@@ -1063,6 +1056,83 @@
 
     function isOwnedAlbum(album) {
         return Boolean(album && currentUserId && album.createdBy === currentUserId);
+    }
+
+    function handleTrackTitleSecretClick(albumId, trackIndex, titleElement) {
+        const now = Date.now();
+        let clickTimes = [];
+
+        try {
+            clickTimes = JSON.parse(titleElement.dataset.secretClickTimes || '[]');
+            if (!Array.isArray(clickTimes)) clickTimes = [];
+        } catch {
+            clickTimes = [];
+        }
+
+        // 오래된 클릭은 버리고 최근 6초 안의 클릭만 본다.
+        clickTimes = clickTimes.filter(time => now - Number(time) <= 6000);
+        clickTimes.push(now);
+
+        // 최근 6번 클릭이 '더블클릭 3회' 형태인지 확인한다.
+        // 각 더블클릭의 두 클릭 간격은 650ms 이하로 넉넉하게 허용한다.
+        if (clickTimes.length >= 6) {
+            const lastSix = clickTimes.slice(-6);
+            const threeDoubleClicks =
+                (lastSix[1] - lastSix[0] <= 650) &&
+                (lastSix[3] - lastSix[2] <= 650) &&
+                (lastSix[5] - lastSix[4] <= 650);
+
+            if (threeDoubleClicks) {
+                titleElement.dataset.secretClickTimes = '[]';
+                toggleTrackTitleFromDetail(albumId, trackIndex);
+                return;
+            }
+        }
+
+        titleElement.dataset.secretClickTimes = JSON.stringify(clickTimes.slice(-6));
+    }
+
+    async function toggleTrackTitleFromDetail(albumId, trackIndex) {
+        const albumIndex = albumsData.findIndex(album => String(album.id) === String(albumId));
+        if (albumIndex < 0) return;
+
+        const album = albumsData[albumIndex];
+        const tracks = Array.isArray(album.tracks) ? album.tracks : [];
+        if (!tracks[trackIndex]) return;
+
+        const wasTitle = Boolean(tracks[trackIndex].isTitle);
+        const updatedTracks = tracks.map((track, index) => ({
+            ...track,
+            isTitle: index === trackIndex ? !wasTitle : false
+        }));
+        const updatedAlbum = { ...album, tracks: updatedTracks };
+
+        // 세 번째 더블클릭이 인식됐다는 것을 즉시 보여준다.
+        albumsData[albumIndex] = updatedAlbum;
+        updateDetailTitleBadges(updatedAlbum);
+
+        try {
+            const service = await window.firebaseAlbumServicePromise;
+            await service.updateAlbum(updatedAlbum);
+        } catch (error) {
+            // 저장 실패 시 화면과 메모리 상태를 원래대로 되돌린다.
+            albumsData[albumIndex] = album;
+            updateDetailTitleBadges(album);
+            console.error('타이틀곡 저장 실패:', error);
+            showAlert(
+                '타이틀곡 저장 실패',
+                `${error.message || '타이틀곡 정보를 저장하지 못했습니다.'}<br>Firestore 수정 권한을 확인해주세요.`,
+                'error'
+            );
+        }
+    }
+
+    function updateDetailTitleBadges(album) {
+        const tracks = Array.isArray(album?.tracks) ? album.tracks : [];
+        document.querySelectorAll('#track-list .track-title-badge').forEach(badge => {
+            const index = Number(badge.dataset.trackIndex);
+            badge.classList.toggle('hidden', !tracks[index]?.isTitle);
+        });
     }
 
     function showAlbumDetail(id) {
@@ -1113,7 +1183,10 @@
             trackEl.innerHTML = `
                 <div class="text-gray-500 font-bold w-6 text-right pt-1 group-hover:text-spotify-base transition-colors">${index + 1}</div>
                 <div class="flex-grow">
-                    <h4 class="text-lg font-bold text-white mb-1 group-hover:text-spotify-base transition-colors">${escapeHtml(track.title)}</h4>
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <h4 class="track-title-trigger select-none text-lg font-bold text-white group-hover:text-spotify-base transition-colors" data-track-index="${index}">${escapeHtml(track.title)}</h4>
+                        <span class="track-title-badge ${track.isTitle ? '' : 'hidden'} inline-flex items-center gap-1 bg-yellow-400 text-black text-[10px] font-black px-2 py-1 rounded-full tracking-wide" data-track-index="${index}"><i class="fas fa-star text-[9px]"></i> TITLE</span>
+                    </div>
                     <p class="text-sm text-gray-400 mb-3">${escapeHtml(track.desc)}</p>
                     <div class="flex flex-wrap gap-2">
                         <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 text-white px-4 py-1.5 rounded-full transition-colors">
@@ -1123,6 +1196,17 @@
                     </div>
                 </div>
             `;
+            const titleElement = trackEl.querySelector('.track-title-trigger');
+            if (titleElement) {
+                // 브라우저별 dblclick 이벤트 차이를 피하기 위해 실제 click 간격으로
+                // '더블클릭 3회(총 6번 클릭)'를 직접 판별한다.
+                titleElement.style.cursor = 'pointer';
+                titleElement.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    handleTrackTitleSecretClick(album.id, index, titleElement);
+                });
+            }
+
             const playlistButton = trackEl.querySelector('.playlist-add-btn');
             const playlistItem = makePlaylistItem(album, track, index);
             applyPlaylistButtonState(playlistButton, isPlaylistItemSaved(playlistItem.id));
@@ -1159,9 +1243,7 @@
         document.getElementById('playlist-view').classList.add('hidden');
         document.getElementById('class-filter-section').classList.remove('hidden');
         document.getElementById('album-gallery').classList.remove('hidden');
-        const playerFrame = document.getElementById('playlist-player-frame');
         if (playerFrame) playerFrame.src = 'about:blank';
-        const playerSection = document.getElementById('playlist-player-section');
         if (playerSection) playerSection.classList.add('hidden');
 
         // 전체 필터로 초기화
@@ -1232,7 +1314,7 @@
         tracksContainer.innerHTML = '';
         trackCount = 0;
         const existingTracks = Array.isArray(album.tracks) ? album.tracks : [];
-        existingTracks.forEach(track => addTrackInput(track.title || '', track.link || '', track.desc || ''));
+        existingTracks.forEach(track => addTrackInput(track.title || '', track.link || '', track.desc || '', Boolean(track.isTitle)));
         while (tracksContainer.children.length < 3) addTrackInput();
 
         const coverInput = document.getElementById('reg-cover');
@@ -1310,16 +1392,17 @@
                 const titleInput = item.querySelector('.track-title');
                 const linkInput = item.querySelector('.track-link');
                 const descInput = item.querySelector('.track-desc');
-
                 const title = titleInput ? titleInput.value.trim() : '';
                 const link = linkInput ? linkInput.value.trim() : '';
                 const desc = descInput ? descInput.value.trim() : '';
+                const isTitle = item.dataset.isTitle === 'true';
 
                 if (index === 0 || title || link) {
                     tracks.push({
                         title: title || `Track ${index + 1}`,
                         link: link || '#',
-                        desc: desc || ''
+                        desc: desc || '',
+                        isTitle
                     });
                 }
             });
