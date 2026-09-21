@@ -1357,7 +1357,7 @@
                         <h4 class="track-title-trigger select-none min-w-0 text-sm sm:text-base md:text-lg font-bold text-white group-hover:text-spotify-base transition-colors break-words" data-track-index="${index}">${escapeHtml(track.title)}</h4>
                         <span class="track-title-badge ${track.isTitle ? '' : 'hidden'} inline-flex shrink-0 items-center gap-1 bg-yellow-400 text-black text-[8px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full tracking-wide" data-track-index="${index}"><i class="fas fa-star text-[7px] sm:text-[9px]"></i> TITLE</span>
                     </div>
-                    ${track.desc ? `<p class="text-[11px] sm:text-sm text-gray-400 leading-relaxed line-clamp-2 sm:line-clamp-none">${escapeHtml(track.desc)}</p>` : ''}
+                    ${track.desc ? `<p class="text-[11px] sm:text-sm text-gray-400 leading-relaxed whitespace-pre-wrap break-words w-full" style="overflow-wrap:anywhere; word-break:break-word;">${escapeHtml(track.desc)}</p>` : ''}
                 </div>
                 <div class="flex items-center justify-center">
                     <a href="${escapeHtml(trackLink)}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 inline-flex items-center justify-center rounded-full text-white hover:text-spotify-base hover:bg-gray-700 transition-colors" aria-label="Suno에서 듣기" title="Suno에서 듣기">
